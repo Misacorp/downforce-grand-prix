@@ -10,7 +10,13 @@ import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 export class DownforceGrandPrixStack extends Stack {
   private helloTable: dynamodb.Table;
   private helloLambda: lambda.Function;
+  private echoLambda: lambda.Function;
   private helloApiGw: apigw.RestApi;
+
+  private messageTable: dynamodb.Table;
+  private createMessageLambda: lambda.Function;
+  private readMessageLambda: lambda.Function;
+  private messageApiGw: apigw.RestApi;
 
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
@@ -24,6 +30,7 @@ export class DownforceGrandPrixStack extends Stack {
    */
   private initialize() {
     this.initHello();
+    this.initMessages();
   }
 
   /**
@@ -33,7 +40,7 @@ export class DownforceGrandPrixStack extends Stack {
   private initHello() {
     // Create DynamoDB table
     this.helloTable = new dynamodb.Table(this, "Hello", {
-      partitionKey: { name: "name", type: AttributeType.STRING },
+      partitionKey: { name: "id", type: AttributeType.STRING },
       billingMode: BillingMode.PAY_PER_REQUEST,
     });
 
@@ -49,18 +56,83 @@ export class DownforceGrandPrixStack extends Stack {
       },
     });
 
+    // Create Echo Lambda
+    this.echoLambda = new NodejsFunction(this, "EchoLambda", {
+      runtime: lambda.Runtime.NODEJS_16_X,
+      entry: path.join(__dirname, "../services/echo.ts"),
+      handler: "handler",
+      timeout: Duration.seconds(3),
+      memorySize: 128,
+    });
+
     this.helloTable.grantReadWriteData(this.helloLambda);
 
     // Create API Gateway
     this.helloApiGw = new apigw.RestApi(this, "hello-api");
 
+    // Hello
     this.helloApiGw.root
       .resourceForPath("hello")
       .addMethod("GET", new apigw.LambdaIntegration(this.helloLambda));
+
+    // Echo
+    this.helloApiGw.root
+      .resourceForPath("echo")
+      .addMethod("POST", new apigw.LambdaIntegration(this.echoLambda));
 
     // Display API URL on deployment
     new CfnOutput(this, "HTTP API URL", {
       value: this.helloApiGw.url ?? "Something went wrong with the deployment",
     });
+  }
+
+  /**
+   * Initializes the Messages template used for a demo message app
+   * @private
+   */
+  private initMessages() {
+    // Create DynamoDB table
+    this.messageTable = new dynamodb.Table(this, "Message", {
+      partitionKey: { name: "id", type: AttributeType.STRING },
+      billingMode: BillingMode.PAY_PER_REQUEST,
+    });
+
+    // Create Lambdas
+    this.createMessageLambda = new NodejsFunction(this, "CreateMessageLambda", {
+      runtime: lambda.Runtime.NODEJS_16_X,
+      entry: path.join(__dirname, "../services/createMessage.ts"),
+      handler: "handler",
+      timeout: Duration.seconds(3),
+      memorySize: 128,
+      environment: {
+        MESSAGE_TABLE_NAME: this.messageTable.tableName,
+      },
+    });
+
+    this.messageTable.grantWriteData(this.createMessageLambda);
+
+    this.readMessageLambda = new NodejsFunction(this, "ReadMessageLambda", {
+      runtime: lambda.Runtime.NODEJS_16_X,
+      entry: path.join(__dirname, "../services/readMessages.ts"),
+      handler: "handler",
+      timeout: Duration.seconds(3),
+      memorySize: 128,
+      environment: {
+        MESSAGE_TABLE_NAME: this.messageTable.tableName,
+      },
+    });
+
+    this.messageTable.grantReadData(this.readMessageLambda);
+
+    // Create API Gateway
+    this.messageApiGw = new apigw.RestApi(this, "messages-api");
+
+    this.messageApiGw.root
+      .resourceForPath("message")
+      .addMethod("POST", new apigw.LambdaIntegration(this.createMessageLambda));
+
+    this.messageApiGw.root
+      .resourceForPath("message")
+      .addMethod("GET", new apigw.LambdaIntegration(this.readMessageLambda));
   }
 }
