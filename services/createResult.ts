@@ -1,5 +1,6 @@
 import { APIGatewayEvent, APIGatewayProxyResult } from "aws-lambda";
 import { DynamoDB } from "aws-sdk";
+import { getNewRatings } from "multi-elo";
 import { Game, GameDTO, GameResultItem, SeasonPlayer } from "./types";
 import { createGamePrimaryKey, createPrimaryKey } from "../data/utils";
 import { createPlayer } from "../data/createPlayer";
@@ -55,34 +56,41 @@ export const handler = async function (
     const existingPlayers = await Promise.all(existingPlayersPromises);
 
     // Combine the newly created players with their results for this game
-    const gameResults: GameResultItem[] = gameDTO.results.map((p) => {
-      let player: SeasonPlayer | undefined | null;
+    const gameResultsWithoutRatings: GameResultItem[] = gameDTO.results.map(
+      (p) => {
+        let player: SeasonPlayer | undefined | null;
 
-      if (p.playerId === null) {
-        // Search by player name
-        player = createdPlayers.find((player) => player.name === p.playerName);
-      } else {
-        // Search by id
-        player = existingPlayers.find((player) => player?.pk1 === p.playerId);
+        if (p.playerId === null) {
+          // Search by player name
+          player = createdPlayers.find(
+            (player) => player.name === p.playerName
+          );
+        } else {
+          // Search by id
+          player = existingPlayers.find((player) => player?.pk1 === p.playerId);
+        }
+
+        // If a player is not found (despite everything) we can't save the results
+        if (!player) {
+          throw new Error(
+            "Player with the name ${p.playerName} could not be found among existing or newly created players."
+          );
+        }
+
+        return {
+          player: {
+            id: player.pk1,
+            name: player.name,
+          },
+          points: p.points,
+          eloBeforeGame: player.elo,
+          eloAfterGame: 0, // Calculate this later
+        };
       }
+    );
 
-      // If a player is not found (despite everything) we can't save the results
-      if (!player) {
-        throw new Error(
-          "Player with the name ${p.playerName} could not be found among existing or newly created players."
-        );
-      }
-
-      return {
-        player: {
-          id: player.pk1,
-          name: player.name,
-        },
-        points: p.points,
-        eloBeforeGame: player.elo,
-        eloAfterGame: 1337, // TODO: Business logic
-      };
-    });
+    // Calculate new ELO for each player
+    const gameResults = updateELORatings(gameResultsWithoutRatings);
 
     // Create a game object with all the new players
     const createdAt = new Date();
@@ -141,3 +149,30 @@ const reject = (statusCode: number, message: string) => ({
     description: message,
   }),
 });
+
+/**
+ * Updates ELO ratings for all players in a game
+ * @param results Game results
+ */
+const updateELORatings = (results: GameResultItem[]): GameResultItem[] => {
+  // Sort by descending order of points. The first player is first and last player is last.
+  const sortedDesc = results.sort((a, b) => b.points - a.points);
+
+  const playerRatings = results.map((player) => player.eloBeforeGame);
+
+  // Create an array to describe the order in which players placed.
+  // This is used when calling the ELO calculating function and accounts for ties.
+  // The first player (most points) should have the smallest "order index".
+  // The last player (least points) should have the highest "order index".
+  const order = sortedDesc.map((player) => player.points * -1);
+
+  // Calculate new ELO ratings
+  const newRatings = getNewRatings(playerRatings, order);
+
+  // Assign new ELO ratings to sorted results and return them
+  sortedDesc.forEach(
+    (player, index) => (player.eloAfterGame = newRatings[index])
+  );
+
+  return sortedDesc;
+};
