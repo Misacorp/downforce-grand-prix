@@ -1,6 +1,7 @@
 export interface DatabaseItem {
   pk1: string;
   readonly createdAt: string;
+  type: string;
 }
 
 /**
@@ -29,7 +30,6 @@ export interface Season extends DatabaseItem {
     k: number;
     d: number;
   };
-  type: string;
 }
 
 /**
