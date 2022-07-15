@@ -20,6 +20,7 @@ export interface SeasonPlayer extends DatabaseItem {
  * Describes a season
  */
 export interface Season extends DatabaseItem {
+  sk1: string;
   name: string;
   startDate: string;
   endDate: string;
@@ -28,6 +29,7 @@ export interface Season extends DatabaseItem {
     k: number;
     d: number;
   };
+  type: string;
 }
 
 /**

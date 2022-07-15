@@ -2,7 +2,7 @@ import { DynamoDB } from "aws-sdk";
 import { unmarshall } from "@aws-sdk/util-dynamodb";
 import { Season } from "../services/types";
 
-const dbClient = new DynamoDB.DocumentClient();
+export const getDocumentClient = () => new DynamoDB.DocumentClient();
 
 /**
  * Gets a single season by id
@@ -14,6 +14,8 @@ export const getSeason = async (
   seasonId: string,
   TableName: string
 ): Promise<Season | null> => {
+  const dbClient = getDocumentClient();
+
   const seasonResult = await dbClient
     .get({
       TableName,

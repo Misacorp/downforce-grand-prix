@@ -25,6 +25,7 @@ export class DownforceGrandPrixStack extends Stack {
    */
   private initialize() {
     this.initMessages();
+    this.initDownforceGrandPrix();
   }
 
   /**
@@ -103,7 +104,7 @@ export class DownforceGrandPrixStack extends Stack {
     // Create write lambda
     writeLambda = new NodejsFunction(this, "CreateResult", {
       runtime: lambda.Runtime.NODEJS_16_X,
-      entry: path.join(__dirname, "../services/createResult.ts"),
+      entry: path.join(__dirname, "../services/createGameResult.ts"),
       handler: "handler",
       timeout: Duration.seconds(3),
       memorySize: 128,
@@ -112,7 +113,7 @@ export class DownforceGrandPrixStack extends Stack {
       },
     });
 
-    table.grantWriteData(writeLambda);
+    table.grantReadWriteData(writeLambda);
 
     // Create API
     api = new apigw.RestApi(this, "downforce-api");
