@@ -74,7 +74,7 @@ export const handler = async function (
         // If a player is not found (despite everything) we can't save the results
         if (!player) {
           throw new Error(
-            "Player with the name ${p.playerName} could not be found among existing or newly created players."
+            `Player with the name ${p.playerName} could not be found among existing or newly created players.`
           );
         }
 
@@ -128,7 +128,9 @@ export const handler = async function (
  * Writes a single game result item to the database
  * @param gameResult Game result
  */
-const writeToDatabase = async (gameResult: GameResult): Promise<string> => {
+export const writeToDatabase = async (
+  gameResult: GameResult
+): Promise<string> => {
   const id = createGamePrimaryKey();
 
   await dbClient
