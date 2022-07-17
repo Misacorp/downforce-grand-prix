@@ -6,10 +6,11 @@ import { createGamePrimaryKey, createPrimaryKey } from "../data/utils";
 import { createPlayer } from "../data/createPlayer";
 import { getPlayer } from "../data/getPlayer";
 import { getSeason } from "../data/getSeason";
+import { dynamoDbConfig } from "../config";
 
 interface GameResult {}
 
-const dbClient = new DynamoDB.DocumentClient();
+const dbClient = new DynamoDB.DocumentClient(dynamoDbConfig);
 
 /**
  * Creates a game result and saves it to DynamoDB
@@ -106,6 +107,7 @@ export const handler = async function (
       playerIds: gameResults.map((playerResults) => playerResults.player.id),
       results: gameResults,
       season: season,
+      type: "game",
     };
 
     const writtenId = await writeToDatabase(game);
@@ -127,7 +129,7 @@ export const handler = async function (
  * @param gameResult Game result
  */
 const writeToDatabase = async (gameResult: GameResult): Promise<string> => {
-  const id = createPrimaryKey(new Date());
+  const id = createGamePrimaryKey();
 
   await dbClient
     .put({
@@ -139,7 +141,10 @@ const writeToDatabase = async (gameResult: GameResult): Promise<string> => {
   return id;
 };
 
-const reject = (statusCode: number, message: string) => ({
+const reject = (
+  statusCode: number,
+  message: string
+): APIGatewayProxyResult => ({
   statusCode,
   headers: {
     "Content-Type": "application/json",

@@ -1,8 +1,10 @@
 import { DynamoDB } from "aws-sdk";
 import { unmarshall } from "@aws-sdk/util-dynamodb";
 import { Season } from "../services/types";
+import { dynamoDbConfig } from "../config";
 
-export const getDocumentClient = () => new DynamoDB.DocumentClient();
+export const getDocumentClient = () =>
+  new DynamoDB.DocumentClient(dynamoDbConfig);
 
 /**
  * Gets a single season by id

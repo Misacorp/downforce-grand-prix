@@ -2,8 +2,9 @@ import { DynamoDB } from "aws-sdk";
 import { createPlayerPrimaryKey, createPrimaryKey } from "./utils";
 import { Season, SeasonPlayer } from "../services/types";
 import { getSeason } from "./getSeason";
+import { dynamoDbConfig } from "../config";
 
-const dbClient = new DynamoDB.DocumentClient();
+const dbClient = new DynamoDB.DocumentClient(dynamoDbConfig);
 
 /**
  * Creates a new player in a given season in the database
@@ -38,6 +39,7 @@ export const createPlayer = async (
     sk1: season.pk1,
     pk2: season.pk1,
     sk2: createdPlayerPk,
+    type: "player",
 
     name: playerName,
     createdAt: createdAt.toISOString(),

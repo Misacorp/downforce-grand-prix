@@ -1,8 +1,9 @@
 import { DynamoDB } from "aws-sdk";
 import { unmarshall } from "@aws-sdk/util-dynamodb";
 import { SeasonPlayer } from "../services/types";
+import { dynamoDbConfig } from "../config";
 
-const dbClient = new DynamoDB.DocumentClient();
+const dbClient = new DynamoDB.DocumentClient(dynamoDbConfig);
 
 /**
  * Gets a single player in a given season
