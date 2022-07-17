@@ -23,7 +23,7 @@ export const createSeason = async (
   config: SeasonConfig = defaultConfig,
   tableName: string
 ): Promise<string> => {
-  if (tableName) {
+  if (!tableName) {
     throw new Error("The TABLE_NAME environment variable is not defined");
   }
 
