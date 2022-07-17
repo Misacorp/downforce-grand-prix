@@ -8,10 +8,17 @@ import * as path from "path";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 
 export class DownforceGrandPrixStack extends Stack {
+  // Messages Demo
   private messageTable: dynamodb.Table;
   private createMessageLambda: lambda.Function;
   private readMessageLambda: lambda.Function;
   private messageApiGw: apigw.RestApi;
+
+  // Downforce Grand Prix
+  private table: dynamodb.Table;
+  private createGameResultsLambda: lambda.Function;
+  private createSeasonLambda: lambda.Function;
+  private api: apigw.RestApi;
 
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
@@ -83,44 +90,61 @@ export class DownforceGrandPrixStack extends Stack {
    * @private
    */
   private initDownforceGrandPrix() {
-    let table: dynamodb.Table;
-    let writeLambda: lambda.Function;
-    let api: apigw.RestApi;
-
     // Create DynamoDB table
-    table = new dynamodb.Table(this, "Table", {
+    this.table = new dynamodb.Table(this, "Table", {
       partitionKey: { name: "pk1", type: AttributeType.STRING },
       sortKey: { name: "sk1", type: AttributeType.STRING },
       billingMode: BillingMode.PAY_PER_REQUEST,
     });
 
     // Add global secondary index
-    table.addGlobalSecondaryIndex({
+    this.table.addGlobalSecondaryIndex({
       indexName: "gsi1",
       partitionKey: { name: "pk2", type: AttributeType.STRING },
       sortKey: { name: "sk2", type: AttributeType.STRING },
     });
 
-    // Create write lambda
-    writeLambda = new NodejsFunction(this, "CreateResult", {
+    // Create game result lambda
+    this.createGameResultsLambda = new NodejsFunction(this, "CreateResult", {
       runtime: lambda.Runtime.NODEJS_16_X,
       entry: path.join(__dirname, "../services/createGameResult.ts"),
       handler: "handler",
       timeout: Duration.seconds(3),
       memorySize: 128,
       environment: {
-        TABLE_NAME: table.tableName,
+        TABLE_NAME: this.table.tableName,
       },
     });
 
-    table.grantReadWriteData(writeLambda);
+    this.table.grantReadWriteData(this.createGameResultsLambda);
+
+    // Create season lambda
+    this.createSeasonLambda = new NodejsFunction(this, "CreateSeason", {
+      runtime: lambda.Runtime.NODEJS_16_X,
+      entry: path.join(__dirname, "../services/createSeason.ts"),
+      handler: "handler",
+      timeout: Duration.seconds(3),
+      memorySize: 128,
+      environment: {
+        TABLE_NAME: this.table.tableName,
+      },
+    });
+
+    this.table.grantWriteData(this.createSeasonLambda);
 
     // Create API
-    api = new apigw.RestApi(this, "downforce-api");
+    this.api = new apigw.RestApi(this, "downforce-api");
 
     // Add routes
-    api.root
+    this.api.root
       .resourceForPath("game-result")
-      .addMethod("POST", new apigw.LambdaIntegration(writeLambda));
+      .addMethod(
+        "POST",
+        new apigw.LambdaIntegration(this.createGameResultsLambda)
+      );
+
+    this.api.root
+      .resourceForPath("season")
+      .addMethod("POST", new apigw.LambdaIntegration(this.createSeasonLambda));
   }
 }

@@ -17,6 +17,12 @@ export interface SeasonPlayer extends DatabaseItem {
   gamesPlayed: number;
 }
 
+export interface SeasonConfig {
+  startingElo: number;
+  k: number;
+  d: number;
+}
+
 /**
  * Describes a season
  */
@@ -24,12 +30,8 @@ export interface Season extends DatabaseItem {
   sk1: string;
   name: string;
   startDate: string;
-  endDate: string;
-  config: {
-    startingElo: number;
-    k: number;
-    d: number;
-  };
+  endDate: string | null;
+  config: SeasonConfig;
 }
 
 /**

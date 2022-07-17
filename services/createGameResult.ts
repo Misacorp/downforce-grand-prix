@@ -8,8 +8,6 @@ import { getPlayer } from "../data/getPlayer";
 import { getSeason } from "../data/getSeason";
 import { dynamoDbConfig } from "../config";
 
-interface GameResult {}
-
 const dbClient = new DynamoDB.DocumentClient(dynamoDbConfig);
 
 /**
@@ -129,7 +127,7 @@ export const handler = async function (
  * @param gameResult Game result
  */
 export const writeToDatabase = async (
-  gameResult: GameResult
+  gameResult: Game
 ): Promise<string> => {
   const id = createGamePrimaryKey();
 
