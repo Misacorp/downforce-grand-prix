@@ -110,6 +110,8 @@ export const handler = async function (
 
     const writtenId = await writeToDatabase(game);
 
+    // TODO: Update each player object with a "games played" and new ELO via a table stream handler
+
     return {
       statusCode: 200,
       headers: {
@@ -118,7 +120,7 @@ export const handler = async function (
       body: JSON.stringify({ id: writtenId }),
     };
   } catch (err) {
-    return reject(500, err.message);
+    return reject(500, err.message, err);
   }
 };
 
@@ -126,9 +128,7 @@ export const handler = async function (
  * Writes a single game result item to the database
  * @param gameResult Game result
  */
-export const writeToDatabase = async (
-  gameResult: Game
-): Promise<string> => {
+export const writeToDatabase = async (gameResult: Game): Promise<string> => {
   const id = createGamePrimaryKey();
 
   await dbClient
@@ -141,19 +141,32 @@ export const writeToDatabase = async (
   return id;
 };
 
+/**
+ * Logs an error and rejects
+ * @param statusCode Status code to reject with
+ * @param message    Message describing the reason for rejection
+ * @param error      Error that will be logged to the console
+ */
 const reject = (
   statusCode: number,
-  message: string
-): APIGatewayProxyResult => ({
-  statusCode,
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    title: "An error occurred",
-    description: message,
-  }),
-});
+  message: string,
+  error?: Error
+): APIGatewayProxyResult => {
+  if (error) {
+    console.error(error);
+  }
+
+  return {
+    statusCode,
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      title: "An error occurred",
+      description: message,
+    }),
+  };
+};
 
 /**
  * Updates ELO ratings for all players in a game

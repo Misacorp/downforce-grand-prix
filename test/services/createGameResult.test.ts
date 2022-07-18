@@ -48,6 +48,29 @@ describe("createGameResults", () => {
     );
   });
 
+  it("should create a game when three new players play", async () => {
+    const body: GameDTO = {
+      seasonId: "season#001",
+      results: [
+        {
+          playerId: null,
+          playerName: "Doug Judy",
+          points: 13,
+        },
+        {
+          playerId: null,
+          playerName: "Trudy Judy",
+          points: 21,
+        },
+        {
+          playerId: null,
+          playerName: "Abed Nadir",
+          points: 4,
+        },
+      ],
+    };
+  });
+
   it("should create a game when an existing player and a new player play", async () => {
     const body: GameDTO = {
       seasonId: "season#001",
@@ -194,3 +217,21 @@ const mockWriteToDatabase = () => {
     .spyOn(createGameResultModule, "writeToDatabase")
     .mockResolvedValue("game#001");
 };
+
+const createMockSeasonPlayer = (
+  id: string,
+  name: string,
+  seasonId = "season#001"
+) => ({
+  pk1: id,
+  sk1: seasonId,
+  pk2: seasonId,
+  sk2: id,
+  type: "player",
+
+  name,
+  createdAt: "2022-07-03T19:07:16.211Z",
+  season: seasonId,
+  elo: 1200,
+  gamesPlayed: 1,
+});
