@@ -69,6 +69,34 @@ describe("createGameResults", () => {
         },
       ],
     };
+
+    // Mock createPlayer to return Trudy Judy from above
+    const playerOne: SeasonPlayer = createMockSeasonPlayer(
+      "player#001",
+      "Doug Judy"
+    );
+    const playerTwo: SeasonPlayer = createMockSeasonPlayer(
+      "player#002",
+      "Trudy Judy"
+    );
+    const playerThree: SeasonPlayer = createMockSeasonPlayer(
+      "player#003",
+      "Abed Nadir"
+    );
+    createPlayerMock.mockResolvedValueOnce(playerOne);
+    createPlayerMock.mockResolvedValueOnce(playerTwo);
+    createPlayerMock.mockResolvedValueOnce(playerThree);
+
+    const event: APIGatewayProxyEvent = {
+      body: JSON.stringify(body),
+    } as any;
+
+    const act = await handler(event);
+
+    expect(act.statusCode).toBe(200);
+    expect(JSON.parse(act.body)).toStrictEqual({
+      id: "game#001",
+    });
   });
 
   it("should create a game when an existing player and a new player play", async () => {
@@ -233,5 +261,5 @@ const createMockSeasonPlayer = (
   createdAt: "2022-07-03T19:07:16.211Z",
   season: seasonId,
   elo: 1200,
-  gamesPlayed: 1,
+  gamesPlayed: 0,
 });
