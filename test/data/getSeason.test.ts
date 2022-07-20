@@ -1,36 +1,32 @@
-import { DynamoDB } from "aws-sdk";
 import { getSeason } from "../../data/getSeason";
-import { GetItemInput, GetItemOutput } from "aws-sdk/clients/dynamodb";
+import { mockClient } from "aws-sdk-client-mock";
+import { DynamoDBDocumentClient, GetCommand } from "@aws-sdk/lib-dynamodb";
 
-// Mock the AWS DynamoDB DocumentClient get function
-const mockGet = jest.fn().mockImplementation((): GetItemOutput => ({}));
-
-jest.mock("aws-sdk", () => ({
-  DynamoDB: {
-    DocumentClient: jest.fn().mockReturnValue({
-      get: (args: GetItemInput) => ({
-        promise: () => mockGet(args),
-      }),
-    }),
-  },
-}));
+// Mock DynamoDB
+const ddbMock = mockClient(DynamoDBDocumentClient);
 
 // Mock the console warn function
 const mockConsoleWarn = jest.spyOn(console, "warn");
 
 describe("getSeason", () => {
+  beforeEach(() => {
+    ddbMock.reset();
+  });
+
   afterEach(() => {
     jest.clearAllMocks();
   });
 
   it("should call DocumentClient.get with the correct parameters", async () => {
-    mockGet.mockReturnValueOnce({ Item: {} });
+    ddbMock.on(GetCommand).resolvesOnce({
+      Item: {},
+    });
 
     // Act
-    await getSeason("season#01", "TEST_TABLE_NAME");
+    const season = await getSeason("season#01", "TEST_TABLE_NAME");
 
-    expect(mockGet).toHaveBeenCalledTimes(1);
-    expect(mockGet).toHaveBeenCalledWith({
+    expect(ddbMock).toHaveReceivedCommandTimes(GetCommand, 1);
+    expect(ddbMock).toHaveReceivedCommandWith(GetCommand, {
       TableName: "TEST_TABLE_NAME",
       Key: {
         pk1: "season#01",
@@ -40,7 +36,10 @@ describe("getSeason", () => {
   });
 
   it("should log a warning when attempting to get a season with an id that does not exist", async () => {
-    mockGet.mockReturnValueOnce({ Item: undefined });
+    ddbMock.on(GetCommand).resolvesOnce({
+      Item: undefined,
+    });
+
     mockConsoleWarn.mockImplementationOnce(() => undefined); // Don't log in jest output
 
     // Act
@@ -52,7 +51,10 @@ describe("getSeason", () => {
   });
 
   it("should return null when attempting to get a season with an id that does not exist", async () => {
-    mockGet.mockReturnValueOnce({ Item: undefined });
+    ddbMock.on(GetCommand).resolvesOnce({
+      Item: undefined,
+    });
+
     mockConsoleWarn.mockImplementationOnce(() => undefined); // Don't log in jest output
 
     const act = await getSeason("season#99", "TEST_TABLE_NAME");
@@ -61,24 +63,20 @@ describe("getSeason", () => {
   });
 
   it("should return season data", async () => {
-    const mockSeason: DynamoDB.DocumentClient.AttributeMap = {
-      pk1: { S: "season#01" },
-      sk1: { S: "season" },
-      type: { S: "season" },
-      name: { S: "Test Season Name" },
-      startDate: { S: "2022-07-03T19:07:16.211Z" },
-      endDate: { S: "2022-12-03T19:07:16.211Z" },
-      config: {
-        M: {
-          startingElo: { N: 1200 },
-          k: { N: 32 },
-          d: { N: 400 },
+    ddbMock.on(GetCommand).resolvesOnce({
+      Item: {
+        pk1: "season#01",
+        sk1: "season",
+        name: "Test Season Name",
+        startDate: "2022-07-03T19:07:16.211Z",
+        endDate: "2022-12-03T19:07:16.211Z",
+        config: {
+          startingElo: 1200,
+          k: 32,
+          d: 400,
         },
+        type: "season",
       },
-    };
-
-    mockGet.mockReturnValueOnce({
-      Item: mockSeason,
     });
 
     const act = await getSeason("season#01", "TEST_TABLE_NAME");

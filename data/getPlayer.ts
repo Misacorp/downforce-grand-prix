@@ -1,9 +1,7 @@
-import { DynamoDB } from "aws-sdk";
-import { unmarshall } from "@aws-sdk/util-dynamodb";
 import { SeasonPlayer } from "../services/types";
-import { dynamoDbConfig } from "../config";
+import { getDocumentClient } from "./utils";
 
-const dbClient = new DynamoDB.DocumentClient(dynamoDbConfig);
+const dbClient = getDocumentClient();
 
 /**
  * Gets a single player in a given season
@@ -17,15 +15,13 @@ export const getPlayer = async (
   seasonId: string,
   TableName: string
 ): Promise<SeasonPlayer | null> => {
-  const playerResult = await dbClient
-    .get({
-      TableName,
-      Key: {
-        pk1: playerId,
-        sk1: seasonId,
-      },
-    })
-    .promise();
+  const playerResult = await dbClient.get({
+    TableName,
+    Key: {
+      pk1: playerId,
+      sk1: seasonId,
+    },
+  });
 
   const player = playerResult.Item;
 
@@ -38,5 +34,5 @@ export const getPlayer = async (
     return null;
   }
 
-  return unmarshall(player) as SeasonPlayer;
+  return player as SeasonPlayer;
 };

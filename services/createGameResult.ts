@@ -41,16 +41,14 @@ export const handler = async function (
     const createdPlayers = await Promise.all(createPlayersPromises);
 
     // Fetch the remaining (known) players
-    const knownPlayers = gameDTO.results.filter(
-      (player) => player.playerId !== null
-    );
-
     const existingPlayersPromises: Promise<SeasonPlayer | null>[] = [];
-    knownPlayers.forEach((player) => {
-      existingPlayersPromises.push(
-        getPlayer(player.playerName, season.pk1, process.env.TABLE_NAME!)
-      );
-    });
+    gameDTO.results
+      .filter((player) => player.playerId)
+      .forEach((player) => {
+        existingPlayersPromises.push(
+          getPlayer(player.playerId!, season.pk1, process.env.TABLE_NAME!)
+        );
+      });
 
     const existingPlayers = await Promise.all(existingPlayersPromises);
 
@@ -83,7 +81,7 @@ export const handler = async function (
           },
           points: p.points,
           eloBeforeGame: player.elo,
-          eloAfterGame: 0, // Calculate this later
+          eloAfterGame: 0, // Calculate this later in the code
         };
       }
     );

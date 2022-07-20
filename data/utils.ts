@@ -1,4 +1,9 @@
 import { Ulid } from "id128";
+import { DynamoDB } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocument } from "@aws-sdk/lib-dynamodb";
+
+// DynamoDB client used for creating document clients
+let client: DynamoDB;
 
 /**
  * Creates a primary key
@@ -19,3 +24,14 @@ export const createSeasonPrimaryKey = (time?: Date): string =>
 
 export const createGamePrimaryKey = (time?: Date): string =>
   `game#${createPrimaryKey(time)}`;
+
+/**
+ * Creates a DynamoDB document client
+ */
+export const getDocumentClient = () => {
+  if (!client) {
+    client = new DynamoDB({});
+  }
+
+  return DynamoDBDocument.from(client);
+};
