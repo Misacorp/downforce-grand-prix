@@ -1,14 +1,12 @@
 import { APIGatewayEvent, APIGatewayProxyResult } from "aws-lambda";
-import { DynamoDB } from "aws-sdk";
 import { getNewRatings } from "multi-elo";
 import { Game, GameDTO, GameResultItem, SeasonPlayer } from "./types";
-import { createGamePrimaryKey, createPrimaryKey } from "../data/utils";
+import { createGamePrimaryKey, getDocumentClient } from "../data/utils";
 import { createPlayer } from "../data/createPlayer";
 import { getPlayer } from "../data/getPlayer";
 import { getSeason } from "../data/getSeason";
-import { dynamoDbConfig } from "../config";
 
-const dbClient = new DynamoDB.DocumentClient(dynamoDbConfig);
+const dbClient = getDocumentClient();
 
 /**
  * Creates a game result and saves it to DynamoDB
@@ -125,18 +123,15 @@ export const handler = async function (
 /**
  * Writes a single game result item to the database
  * @param gameResult Game result
+ * @returns Primary key written to this item
  */
 export const writeToDatabase = async (gameResult: Game): Promise<string> => {
-  const id = createGamePrimaryKey();
+  await dbClient.put({
+    Item: gameResult,
+    TableName: process.env.TABLE_NAME!,
+  });
 
-  await dbClient
-    .put({
-      Item: gameResult,
-      TableName: process.env.TABLE_NAME!,
-    })
-    .promise();
-
-  return id;
+  return gameResult.pk1;
 };
 
 /**

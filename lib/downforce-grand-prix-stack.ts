@@ -17,6 +17,7 @@ export class DownforceGrandPrixStack extends Stack {
   // Downforce Grand Prix
   private table: dynamodb.Table;
   private createGameResultsLambda: lambda.Function;
+  private getGameResultsLambda: lambda.Function;
   private createSeasonLambda: lambda.Function;
   private api: apigw.RestApi;
 
@@ -105,9 +106,26 @@ export class DownforceGrandPrixStack extends Stack {
     });
 
     // Create game result lambda
-    this.createGameResultsLambda = new NodejsFunction(this, "CreateResult", {
+    this.createGameResultsLambda = new NodejsFunction(
+      this,
+      "CreateGameResult",
+      {
+        runtime: lambda.Runtime.NODEJS_16_X,
+        entry: path.join(__dirname, "../services/createGameResult.ts"),
+        handler: "handler",
+        timeout: Duration.seconds(3),
+        memorySize: 128,
+        environment: {
+          TABLE_NAME: this.table.tableName,
+        },
+      }
+    );
+
+    this.table.grantReadWriteData(this.createGameResultsLambda);
+
+    this.getGameResultsLambda = new NodejsFunction(this, "GetGameResult", {
       runtime: lambda.Runtime.NODEJS_16_X,
-      entry: path.join(__dirname, "../services/createGameResult.ts"),
+      entry: path.join(__dirname, "../services/getGameResult.ts"),
       handler: "handler",
       timeout: Duration.seconds(3),
       memorySize: 128,
@@ -116,7 +134,7 @@ export class DownforceGrandPrixStack extends Stack {
       },
     });
 
-    this.table.grantReadWriteData(this.createGameResultsLambda);
+    this.table.grantReadData(this.getGameResultsLambda);
 
     // Create season lambda
     this.createSeasonLambda = new NodejsFunction(this, "CreateSeason", {
@@ -135,16 +153,28 @@ export class DownforceGrandPrixStack extends Stack {
     // Create API
     this.api = new apigw.RestApi(this, "downforce-api");
 
-    // Add routes
-    this.api.root
-      .resourceForPath("game-result")
-      .addMethod(
-        "POST",
-        new apigw.LambdaIntegration(this.createGameResultsLambda)
-      );
+    // Add game routes
+    const gameResultsResource = this.api.root.addResource("game");
 
-    this.api.root
-      .resourceForPath("season")
-      .addMethod("POST", new apigw.LambdaIntegration(this.createSeasonLambda));
+    gameResultsResource.addMethod(
+      "POST",
+      new apigw.LambdaIntegration(this.createGameResultsLambda)
+    );
+
+    // Single game
+    const gameResultResource = gameResultsResource.addResource("{gameId}");
+
+    gameResultResource.addMethod(
+      "GET",
+      new apigw.LambdaIntegration(this.getGameResultsLambda)
+    );
+
+    // Add season routes
+    const seasonsResource = this.api.root.addResource("season");
+
+    seasonsResource.addMethod(
+      "POST",
+      new apigw.LambdaIntegration(this.createSeasonLambda)
+    );
   }
 }

@@ -1,4 +1,3 @@
-import { DynamoDB } from "aws-sdk";
 import { getPlayer } from "../../data/getPlayer";
 import { mockClient } from "aws-sdk-client-mock";
 import { DynamoDBDocumentClient, GetCommand } from "@aws-sdk/lib-dynamodb";
