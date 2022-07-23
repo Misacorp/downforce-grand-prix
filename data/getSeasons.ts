@@ -13,7 +13,7 @@ export const getSeasons = async (
 
   const dbResult = await dbClient.query({
     TableName,
-    IndexName: "gsi2",
+    IndexName: "gsi3",
     KeyConditionExpression: "#pk3 = :season",
     ExpressionAttributeValues: {
       ":season": "season",
