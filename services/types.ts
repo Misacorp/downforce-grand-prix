@@ -28,6 +28,7 @@ export interface SeasonConfig {
  */
 export interface Season extends DatabaseItem {
   sk1: string;
+  pk3: string;
   name: string;
   startDate: string;
   endDate: string | null;

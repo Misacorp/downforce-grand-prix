@@ -23,14 +23,15 @@ Defining an application's database access patterns is important when using Dynam
 
 #### Read
 
-| Access Pattern                                 | Implementation |
-|------------------------------------------------|-------------|
-|Read ELO rating of all players in a given season|   Query `pk2 = seasonId` and `sk2 = begins_with("player")`|
-|Read ELO rating of a given player in a given season.|Query `pk1 = playerId` and `sk1 = seasonId`|
-|Read the results of a single game.|Query `pk1 = gameId` (if `sk1` is needed, use `begins_with(season)`)|
-|Read the game history of a single player.|Scan with filter `type = game` and `playerList contains(playerId)`|
-|Read the entire game history of a given season.|Query `pk2 = seasonId` and `sk2 = begins_with("game")`|
-|Read details of a season.|Query `pk1 = seasonId` and `sk1 = begins_with("season")`|
+| Access Pattern                                 | Implementation                                                  |
+|------------------------------------------------|-----------------------------------------------------------------|
+|Read ELO rating of all players in a given season| Query `pk2 = seasonId` and `sk2 = begins_with("player")`        |
+|Read ELO rating of a given player in a given season.| Query `pk1 = playerId` and `sk1 = seasonId`                     |
+|Read the results of a single game.| Query `pk1 = gameId` (if `sk1` is needed, use `begins_with(season)`) |
+|Read the game history of a single player.| Scan with filter `type = game` and `playerList contains(playerId)` |
+|Read the entire game history of a given season.| Query `pk2 = seasonId` and `sk2 = begins_with("game")`          |
+|Read details of a season.| Query `pk1 = seasonId` and `sk1 = begins_with("season")`        |
+|Read a list of all seasons.| Query `pk3 = 'season'`                                          |
 
 ### Data types
 

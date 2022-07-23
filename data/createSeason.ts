@@ -34,6 +34,7 @@ export const createSeason = async (
   const season: Season = {
     pk1: createdSeasonPk,
     sk1: "season",
+    pk3: "season",
     type: "season",
     createdAt: createdAt.toISOString(),
     startDate: createdAt.toISOString(),

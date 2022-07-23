@@ -24,10 +24,10 @@ export const getGame = async (
       "#pk1": "pk1",
       "#sk1": "sk1",
       "#type": "type",
-      "#seasonName": "season.name",
+      "#name": "name",
     },
     ProjectionExpression:
-      "pk1, createdAt, #type, results, season.pk1, season.startDate, season.endDate, #seasonName",
+      "pk1, createdAt, #type, results, season.pk1, season.startDate, season.endDate, season.#name",
   });
 
   const games = GameResult.Items;

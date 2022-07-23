@@ -19,6 +19,7 @@ export class DownforceGrandPrixStack extends Stack {
   private createGameResultsLambda: lambda.Function;
   private getGameResultsLambda: lambda.Function;
   private createSeasonLambda: lambda.Function;
+  private getSeasonsLambda: lambda.Function;
   private api: apigw.RestApi;
 
   constructor(scope: Construct, id: string, props?: StackProps) {
@@ -98,11 +99,16 @@ export class DownforceGrandPrixStack extends Stack {
       billingMode: BillingMode.PAY_PER_REQUEST,
     });
 
-    // Add global secondary index
+    // Add global secondary indices
     this.table.addGlobalSecondaryIndex({
       indexName: "gsi1",
       partitionKey: { name: "pk2", type: AttributeType.STRING },
       sortKey: { name: "sk2", type: AttributeType.STRING },
+    });
+
+    this.table.addGlobalSecondaryIndex({
+      indexName: "gsi2",
+      partitionKey: { name: "pk3", type: AttributeType.STRING },
     });
 
     // Create game result lambda
@@ -123,6 +129,7 @@ export class DownforceGrandPrixStack extends Stack {
 
     this.table.grantReadWriteData(this.createGameResultsLambda);
 
+    // Get game result lambda
     this.getGameResultsLambda = new NodejsFunction(this, "GetGameResult", {
       runtime: lambda.Runtime.NODEJS_16_X,
       entry: path.join(__dirname, "../services/getGameResult.ts"),
@@ -150,6 +157,20 @@ export class DownforceGrandPrixStack extends Stack {
 
     this.table.grantWriteData(this.createSeasonLambda);
 
+    // Get all seasons lambda
+    this.getSeasonsLambda = new NodejsFunction(this, "GetSeasons", {
+      runtime: lambda.Runtime.NODEJS_16_X,
+      entry: path.join(__dirname, "../services/getSeasons.ts"),
+      handler: "handler",
+      timeout: Duration.seconds(3),
+      memorySize: 128,
+      environment: {
+        TABLE_NAME: this.table.tableName,
+      },
+    });
+
+    this.table.grantReadData(this.getSeasonsLambda);
+
     // Create API
     this.api = new apigw.RestApi(this, "downforce-api");
 
@@ -175,6 +196,12 @@ export class DownforceGrandPrixStack extends Stack {
     seasonsResource.addMethod(
       "POST",
       new apigw.LambdaIntegration(this.createSeasonLambda)
+    );
+
+    // Get seasons route
+    seasonsResource.addMethod(
+      "GET",
+      new apigw.LambdaIntegration(this.getSeasonsLambda)
     );
   }
 }
