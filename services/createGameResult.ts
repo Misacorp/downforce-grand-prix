@@ -8,6 +8,10 @@ import { getSeason } from "../data/getSeason";
 
 const dbClient = getDocumentClient();
 
+// npx cdk synth --no-staging DownforceGrandPrixStack > template.yaml
+// aws-vault exec sandbox -- sam local invoke --event ./test/events/gamesCreate_NewPlayersRequest.json --env-vars environment.json CreateGameResult
+// aws-vault exec sandbox -- sam local invoke --event ./test/events/gamesCreate_ExistingPlayersRequest.json --env-vars environment.json CreateGameResult
+
 /**
  * Creates a game result and saves it to DynamoDB
  * @param event
@@ -184,17 +188,27 @@ const reject = (
  * Updates ELO ratings for all players in a game
  * @param results Game results
  */
-const updateELORatings = (results: GameResultItem[]): GameResultItem[] => {
+export const updateELORatings = (
+  results: GameResultItem[]
+): GameResultItem[] => {
   // Sort by descending order of points. The first player is first and last player is last.
   const sortedDesc = results.sort((a, b) => b.points - a.points);
 
-  const playerRatings = results.map((player) => player.eloBeforeGame);
+  const playerRatings = sortedDesc.map((player) => player.eloBeforeGame);
+
+  const highestPointCount: number = Math.max(
+    ...sortedDesc.map((item) => item.points)
+  );
 
   // Create an array to describe the order in which players placed.
   // This is used when calling the ELO calculating function and accounts for ties.
   // The first player (most points) should have the smallest "order index".
   // The last player (least points) should have the highest "order index".
-  const order = sortedDesc.map((player) => player.points * -1);
+  // Tied players should have the same "order index"
+  // We add the highest point count to each result since negative values don't work with the elo calculator we use
+  const order = sortedDesc.map(
+    (gameResultItem) => gameResultItem.points * -1 + highestPointCount
+  );
 
   // Calculate new ELO ratings
   const newRatings = getNewRatings(playerRatings, order);

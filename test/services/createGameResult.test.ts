@@ -1,10 +1,16 @@
 import { APIGatewayProxyEvent } from "aws-lambda";
-import { GameDTO, Season, SeasonPlayer } from "../../services/types";
+import {
+  GameDTO,
+  GameResultItem,
+  Season,
+  SeasonPlayer,
+} from "../../services/types";
 import * as createGameResultModule from "../../services/createGameResult";
 import * as getSeasonModule from "../../data/getSeason";
 import * as createPlayerModule from "../../data/createPlayer";
 import * as getPlayerModule from "../../data/getPlayer";
 import SpyInstance = jest.SpyInstance;
+import { updateELORatings } from "../../services/createGameResult";
 
 const { handler } = createGameResultModule;
 
@@ -17,130 +23,201 @@ describe("createGameResults", () => {
     teardown();
   });
 
-  it("should return status 500 when the given season does not exist", async () => {
-    getSeasonMock.mockResolvedValueOnce(null);
+  describe("handler", () => {
+    it("should return status 500 when the given season does not exist", async () => {
+      getSeasonMock.mockResolvedValueOnce(null);
 
-    const body: GameDTO = {
-      seasonId: "season#does-not-exist",
-      results: [
-        {
-          playerId: null,
-          playerName: "Doug Judy",
-          points: 13,
-        },
-        {
-          playerId: null,
-          playerName: "Trudy Judy",
-          points: 21,
-        },
-      ],
-    };
+      const body: GameDTO = {
+        seasonId: "season#does-not-exist",
+        results: [
+          {
+            playerId: null,
+            playerName: "Doug Judy",
+            points: 13,
+          },
+          {
+            playerId: null,
+            playerName: "Trudy Judy",
+            points: 21,
+          },
+        ],
+      };
 
-    const event: APIGatewayProxyEvent = {
-      body: JSON.stringify(body),
-    } as any;
+      const event: APIGatewayProxyEvent = {
+        body: JSON.stringify(body),
+      } as any;
 
-    const act = await handler(event);
+      const act = await handler(event);
 
-    expect(act.statusCode).toBe(500);
-    expect(JSON.parse(act.body).description).toBe(
-      "A season with id season#does-not-exist does not exist"
-    );
-  });
+      expect(act.statusCode).toBe(500);
+      expect(JSON.parse(act.body).description).toBe(
+        "A season with id season#does-not-exist does not exist"
+      );
+    });
 
-  it("should create a game when three new players play", async () => {
-    const body: GameDTO = {
-      seasonId: "season#001",
-      results: [
-        {
-          playerId: null,
-          playerName: "Doug Judy",
-          points: 13,
-        },
-        {
-          playerId: null,
-          playerName: "Trudy Judy",
-          points: 21,
-        },
-        {
-          playerId: null,
-          playerName: "Abed Nadir",
-          points: 4,
-        },
-      ],
-    };
+    it("should create a game when three new players play", async () => {
+      const body: GameDTO = {
+        seasonId: "season#001",
+        results: [
+          {
+            playerId: null,
+            playerName: "Doug Judy",
+            points: 13,
+          },
+          {
+            playerId: null,
+            playerName: "Trudy Judy",
+            points: 21,
+          },
+          {
+            playerId: null,
+            playerName: "Abed Nadir",
+            points: 4,
+          },
+        ],
+      };
 
-    // Mock createPlayer to return Trudy Judy from above
-    const playerOne: SeasonPlayer = createMockSeasonPlayer(
-      "player#001",
-      "Doug Judy"
-    );
-    const playerTwo: SeasonPlayer = createMockSeasonPlayer(
-      "player#002",
-      "Trudy Judy"
-    );
-    const playerThree: SeasonPlayer = createMockSeasonPlayer(
-      "player#003",
-      "Abed Nadir"
-    );
-    createPlayerMock.mockResolvedValueOnce(playerOne);
-    createPlayerMock.mockResolvedValueOnce(playerTwo);
-    createPlayerMock.mockResolvedValueOnce(playerThree);
+      // Mock createPlayer to return Trudy Judy from above
+      const playerOne: SeasonPlayer = createMockSeasonPlayer(
+        "player#001",
+        "Doug Judy"
+      );
+      const playerTwo: SeasonPlayer = createMockSeasonPlayer(
+        "player#002",
+        "Trudy Judy"
+      );
+      const playerThree: SeasonPlayer = createMockSeasonPlayer(
+        "player#003",
+        "Abed Nadir"
+      );
+      createPlayerMock.mockResolvedValueOnce(playerOne);
+      createPlayerMock.mockResolvedValueOnce(playerTwo);
+      createPlayerMock.mockResolvedValueOnce(playerThree);
 
-    const event: APIGatewayProxyEvent = {
-      body: JSON.stringify(body),
-    } as any;
+      const event: APIGatewayProxyEvent = {
+        body: JSON.stringify(body),
+      } as any;
 
-    const act = await handler(event);
+      const act = await handler(event);
 
-    expect(act.statusCode).toBe(200);
-    expect(JSON.parse(act.body)).toStrictEqual({
-      id: "game#001",
+      expect(act.statusCode).toBe(200);
+      expect(JSON.parse(act.body)).toStrictEqual({
+        id: "game#001",
+      });
+    });
+
+    it("should create a game when an existing player and a new player play", async () => {
+      const body: GameDTO = {
+        seasonId: "season#001",
+        results: [
+          {
+            playerId: "player#001",
+            playerName: "Doug Judy",
+            points: 13,
+          },
+          {
+            playerId: null,
+            playerName: "Trudy Judy",
+            points: 21,
+          },
+        ],
+      };
+
+      // Mock createPlayer to return Trudy Judy from above
+      const seasonPlayer: SeasonPlayer = {
+        pk1: "player#002",
+        sk1: "season#001",
+        pk2: "season#001",
+        sk2: "player#002",
+        type: "player",
+
+        name: "Trudy Judy",
+        createdAt: "2022-07-03T19:07:16.211Z",
+        season: "season#001",
+        elo: 1200,
+        gamesPlayed: 1,
+      };
+      createPlayerMock.mockResolvedValueOnce(seasonPlayer);
+
+      const event: APIGatewayProxyEvent = {
+        body: JSON.stringify(body),
+      } as any;
+
+      const act = await handler(event);
+
+      expect(act.statusCode).toBe(200);
+      expect(JSON.parse(act.body)).toStrictEqual({
+        id: "game#001",
+      });
     });
   });
 
-  it("should create a game when an existing player and a new player play", async () => {
-    const body: GameDTO = {
-      seasonId: "season#001",
-      results: [
-        {
-          playerId: "player#001",
-          playerName: "Doug Judy",
-          points: 13,
-        },
-        {
-          playerId: null,
-          playerName: "Trudy Judy",
-          points: 21,
-        },
-      ],
+  describe("updateELORatings", () => {
+    const winner: GameResultItem = {
+      player: {
+        id: "winner",
+        name: "Winner",
+      },
+      points: 22,
+      eloBeforeGame: 1200,
+      eloAfterGame: 0,
+    };
+    const loser: GameResultItem = {
+      player: {
+        id: "loser",
+        name: "Loser",
+      },
+      points: 1,
+      eloBeforeGame: 1200,
+      eloAfterGame: 0,
     };
 
-    // Mock createPlayer to return Trudy Judy from above
-    const seasonPlayer: SeasonPlayer = {
-      pk1: "player#002",
-      sk1: "season#001",
-      pk2: "season#001",
-      sk2: "player#002",
-      type: "player",
+    it("should calculate ELO ratings when the first player beats the second player", () => {
+      const gameResultItems: GameResultItem[] = [winner, loser];
 
-      name: "Trudy Judy",
-      createdAt: "2022-07-03T19:07:16.211Z",
-      season: "season#001",
-      elo: 1200,
-      gamesPlayed: 1,
-    };
-    createPlayerMock.mockResolvedValueOnce(seasonPlayer);
+      const act = updateELORatings(gameResultItems);
 
-    const event: APIGatewayProxyEvent = {
-      body: JSON.stringify(body),
-    } as any;
+      const winnerElo = act.find(
+        (gameResultItem) => gameResultItem.player.id === "winner"
+      )!.eloAfterGame;
+      const loserElo = act.find(
+        (gameResultItem) => gameResultItem.player.id === "loser"
+      )!.eloAfterGame;
 
-    const act = await handler(event);
+      expect(winnerElo).toBeGreaterThan(loserElo);
+    });
 
-    expect(act.statusCode).toBe(200);
-    expect(JSON.parse(act.body)).toStrictEqual({
-      id: "game#001",
+    it("should calculate ELO ratings when the second player beats the first player", () => {
+      const gameResultItems: GameResultItem[] = [loser, winner];
+
+      const act = updateELORatings(gameResultItems);
+
+      const winnerElo = act.find(
+        (gameResultItem) => gameResultItem.player.id === "winner"
+      )!.eloAfterGame;
+      const loserElo = act.find(
+        (gameResultItem) => gameResultItem.player.id === "loser"
+      )!.eloAfterGame;
+
+      expect(winnerElo).toBeGreaterThan(loserElo);
+    });
+
+    it("should calculate ELO ratings when two players tie", () => {
+      const gameResultItems: GameResultItem[] = [
+        { ...winner, player: { id: "first-player", name: "First Player" } },
+        { ...winner, player: { id: "second-player", name: "Second Player" } },
+      ];
+
+      const act = updateELORatings(gameResultItems);
+
+      const firstElo = act.find(
+        (gameResultItem) => gameResultItem.player.id === "first-player"
+      )!.eloAfterGame;
+      const secondElo = act.find(
+        (gameResultItem) => gameResultItem.player.id === "second-player"
+      )!.eloAfterGame;
+
+      expect(firstElo).toEqual(secondElo);
     });
   });
 });
@@ -180,6 +257,7 @@ const mockGetSeason = () => {
   const seasonMock: Season = {
     pk1: "season#001",
     sk1: "season",
+    pk3: "season",
     name: "Test Season for createGameResults Test",
     startDate: "2022-07-03T19:07:16.211Z",
     endDate: "2022-12-03T19:07:16.211Z",

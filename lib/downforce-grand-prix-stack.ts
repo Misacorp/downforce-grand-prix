@@ -1,4 +1,4 @@
-import { Duration, Stack, StackProps } from "aws-cdk-lib";
+import { Duration, Stack, StackProps, CfnOutput } from "aws-cdk-lib";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import { AttributeType, BillingMode } from "aws-cdk-lib/aws-dynamodb";
@@ -9,6 +9,7 @@ import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 
 export class DownforceGrandPrixStack extends Stack {
   private table: dynamodb.Table;
+  private tableNameOutput: CfnOutput;
   private createGameResultsLambda: lambda.Function;
   private getGameResultsLambda: lambda.Function;
   private createSeasonLambda: lambda.Function;
@@ -38,6 +39,7 @@ export class DownforceGrandPrixStack extends Stack {
     this.initLambdas();
     this.setLambdaPermissions();
     this.initApi();
+    this.setOutputs();
   }
 
   /**
@@ -75,7 +77,7 @@ export class DownforceGrandPrixStack extends Stack {
         runtime: lambda.Runtime.NODEJS_16_X,
         entry: path.join(__dirname, "../services/createGameResult.ts"),
         handler: "handler",
-        timeout: Duration.seconds(3),
+        timeout: Duration.seconds(10),
         memorySize: 128,
         environment: {
           TABLE_NAME: this.table.tableName,
@@ -179,5 +181,14 @@ export class DownforceGrandPrixStack extends Stack {
       "GET",
       new apigw.LambdaIntegration(this.getSeasonsLambda)
     );
+  };
+
+  /**
+   * Define what should be logged when the stack is deployed
+   */
+  private setOutputs = () => {
+    this.tableNameOutput = new CfnOutput(this, "TableName", {
+      value: this.table.tableName,
+    });
   };
 }

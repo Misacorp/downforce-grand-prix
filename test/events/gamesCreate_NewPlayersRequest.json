@@ -1,7 +1,7 @@
 {
-  "resource": "/season",
-  "path": "/season",
-  "httpMethod": "GET",
+  "resource": "/game",
+  "path": "/game",
+  "httpMethod": "POST",
   "headers": null,
   "multiValueHeaders": null,
   "queryStringParameters": null,
@@ -10,11 +10,11 @@
   "stageVariables": null,
   "requestContext": {
     "resourceId": "test",
-    "resourcePath": "/season",
+    "resourcePath": "/game",
     "httpMethod": "GET",
-    "extendedRequestId": "something=",
+    "extendedRequestId": "something",
     "requestTime": "23/Jul/2022:13:33:37 +0000",
-    "path": "/season",
+    "path": "/game",
     "accountId": "183747294084",
     "protocol": "HTTP/1.1",
     "stage": "prod",
@@ -40,6 +40,6 @@
     "domainName": "testPrefix.testDomainName",
     "apiId": "2orek2z2r7"
   },
-  "body": null,
+  "body": "{\"seasonId\": \"season#01822FDC4A2836D3692639AFE9C721B7\", \"results\": [{ \"playerId\": null, \"playerName\": \"Jackie\", \"points\": 19 }, { \"playerId\": null, \"playerName\": \"My Man\", \"points\": 13 }]}",
   "isBase64Encoded": false
 }
