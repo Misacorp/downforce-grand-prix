@@ -134,7 +134,7 @@ export const writeToDatabase = async (game: Game): Promise<string> => {
             pk1: gameResultItem.player.id,
             sk1: game.season.pk1,
           },
-          UpdateExpression: "ADD gamesPlayed :inc, SET elo :elo",
+          UpdateExpression: "ADD gamesPlayed :inc SET elo = :elo",
           ExpressionAttributeValues: {
             ":inc": 1,
             ":elo": gameResultItem.eloAfterGame,
