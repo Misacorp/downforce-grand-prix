@@ -104,9 +104,8 @@ export const handler = async function (
       type: "game",
     };
 
+    // Write game to database and update player ELO ratings and game counts
     const writtenId = await writeToDatabase(game);
-
-    // TODO: Update each player object with a "games played" and new ELO via a table stream handler
 
     return {
       statusCode: 200,
@@ -122,16 +121,36 @@ export const handler = async function (
 
 /**
  * Writes a single game result item to the database
- * @param gameResult Game result
+ * @param game Game result
  * @returns Primary key written to this item
  */
-export const writeToDatabase = async (gameResult: Game): Promise<string> => {
-  await dbClient.put({
-    Item: gameResult,
-    TableName: process.env.TABLE_NAME!,
+export const writeToDatabase = async (game: Game): Promise<string> => {
+  await dbClient.transactWrite({
+    TransactItems: [
+      ...game.results.map((gameResultItem) => ({
+        Update: {
+          TableName: process.env.TABLE_NAME!,
+          Key: {
+            pk1: gameResultItem.player.id,
+            sk1: game.season.pk1,
+          },
+          UpdateExpression: "ADD gamesPlayed :inc, SET elo :elo",
+          ExpressionAttributeValues: {
+            ":inc": 1,
+            ":elo": gameResultItem.eloAfterGame,
+          },
+        },
+      })),
+      {
+        Put: {
+          TableName: process.env.TABLE_NAME!,
+          Item: game,
+        },
+      },
+    ],
   });
 
-  return gameResult.pk1;
+  return game.pk1;
 };
 
 /**
