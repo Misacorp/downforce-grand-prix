@@ -1,11 +1,14 @@
 import { APIGatewayEvent, APIGatewayProxyResult } from "aws-lambda";
 import { getNewRatings } from "multi-elo";
-import { Game, GameDTO, GameResultItem, Season, SeasonPlayer } from "./types";
 import {
-  createGamePrimaryKey,
-  createPlayerPrimaryKey,
-  getDocumentClient,
-} from "../data/utils";
+  Game,
+  GameDTO,
+  GameImplementation,
+  GameResultItem,
+  SeasonPlayer,
+  SeasonPlayerImplementation,
+} from "./types";
+import { createGamePrimaryKey, getDocumentClient } from "../data/utils";
 import { getPlayer } from "../data/getPlayer";
 import { getSeason } from "../data/getSeason";
 
@@ -39,24 +42,8 @@ export const handler = async function (
 
     // Create stubs for the unknown players. These will be inserted into the database later.
     const newPlayerStubs: SeasonPlayer[] = unknownPlayers.map(
-      (unknownPlayer): SeasonPlayer => {
-        const createdAt = new Date();
-        const createdPlayerPk = createPlayerPrimaryKey(createdAt);
-
-        return {
-          pk1: createdPlayerPk,
-          sk1: season.pk1,
-          pk2: season.pk1,
-          sk2: createdPlayerPk,
-          type: "player",
-
-          name: unknownPlayer.playerName,
-          createdAt: createdAt.toISOString(),
-          season: season.pk1,
-          elo: season.config.startingElo,
-          gamesPlayed: 1,
-        };
-      }
+      (unknownPlayer) =>
+        new SeasonPlayerImplementation(season, unknownPlayer.playerName, 1)
     );
 
     // Fetch the remaining (known) players
@@ -71,7 +58,7 @@ export const handler = async function (
 
     const existingPlayers = await Promise.all(existingPlayersPromises);
 
-    // Combine the newly created players with their results for this game
+    // Combine game results and player objects
     const gameResultsWithoutRatings: GameResultItem[] = gameDTO.results.map(
       (p) => {
         let player: SeasonPlayer | undefined | null;
@@ -109,27 +96,13 @@ export const handler = async function (
     const gameResults = updateELORatings(gameResultsWithoutRatings);
 
     // Create a game object with all the new players
-    const createdAt = new Date();
-    const gamePk = createGamePrimaryKey(createdAt);
-
-    const game: Game = {
-      pk1: gamePk,
-      sk1: season.pk1,
-      pk2: season.pk1,
-      sk2: gamePk,
-
-      createdAt: createdAt.toISOString(),
-      playerIds: gameResults.map((playerResults) => playerResults.player.id),
-      results: gameResults,
-      season: season,
-      type: "game",
-    };
+    const game: Game = new GameImplementation(season, gameResults);
 
     // Add new ELO ratings to created player stubs
     const newPlayers: SeasonPlayer[] = newPlayerStubs.map((playerStub) => ({
       ...playerStub,
       elo: game.results.find(
-        (gameResultItem) => gameResultItem.player.name === playerStub.name
+        (gameResultItem) => gameResultItem.player.id === playerStub.pk1
       )!.eloAfterGame,
     }));
 

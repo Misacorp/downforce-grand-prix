@@ -1,3 +1,5 @@
+import { createGamePrimaryKey, createPlayerPrimaryKey } from "../data/utils";
+
 export interface DatabaseItem {
   pk1: string;
   readonly createdAt: string;
@@ -15,6 +17,44 @@ export interface SeasonPlayer extends DatabaseItem {
   season: string;
   elo: number;
   gamesPlayed: number;
+}
+
+/**
+ * Implementation of the SeasonPlayer interface.
+ */
+export class SeasonPlayerImplementation implements SeasonPlayer {
+  pk1: string;
+  createdAt: string;
+  sk1: string;
+  pk2: string;
+  sk2: string;
+  name: string;
+  season: string;
+  elo: number;
+  gamesPlayed: number;
+  type: string;
+
+  constructor(
+    season: Season,
+    name: string,
+    gamesPlayed: number = 0,
+    elo: number = season.config.startingElo
+  ) {
+    const createdAt = new Date();
+    const createdPlayerPk = createPlayerPrimaryKey(createdAt);
+
+    this.pk1 = createdPlayerPk;
+    this.sk1 = season.pk1;
+    this.pk2 = season.pk1;
+    this.sk2 = createdPlayerPk;
+    this.type = "player";
+
+    this.name = name;
+    this.createdAt = createdAt.toISOString();
+    this.season = season.pk1;
+    this.elo = elo;
+    this.gamesPlayed = gamesPlayed;
+  }
 }
 
 export interface SeasonConfig {
@@ -64,6 +104,37 @@ export interface Game extends DatabaseItem {
   playerIds: string[];
   results: GameResultItem[];
   season: Season;
+}
+
+/**
+ * Implementation of the Game interface
+ */
+export class GameImplementation implements Game {
+  pk1: string;
+  sk1: string;
+  pk2: string;
+  sk2: string;
+  createdAt: string;
+  type: string;
+  playerIds: string[];
+  results: GameResultItem[];
+  season: Season;
+
+  constructor(season: Season, results: GameResultItem[]) {
+    const createdAt = new Date();
+    const pk = createGamePrimaryKey(createdAt);
+
+    this.pk1 = pk;
+    this.sk1 = season.pk1;
+    this.pk2 = season.pk1;
+    this.sk2 = pk;
+
+    this.createdAt = createdAt.toISOString();
+    this.playerIds = results.map((playerResults) => playerResults.player.id);
+    this.results = results;
+    this.season = season;
+    this.type = "game";
+  }
 }
 
 /**
