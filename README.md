@@ -24,7 +24,7 @@ The following API endpoints are planned. See their implementation status in the 
 | Get player info and all played games | `GET /player/:playerId`        |     ❌      |
 | Create game                          | `POST /game`                   |     ✅      |
 | Get single game                      | `GET /game/:gameId`            |     ✅      |
-| Get list of all games in a season    | `GET /game?season=:seasonId`   |     ❌      |
+| Get list of all games in a season    | `GET /game?season=:seasonId`   |     ✅      |
 
 Note that any given `Player` is always tied to a single season. The same person playing in two different seasons will be represented by two different `Player` entities, one for each season.
 

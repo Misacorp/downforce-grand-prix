@@ -3,7 +3,7 @@ import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import { AttributeType, BillingMode } from "aws-cdk-lib/aws-dynamodb";
 import * as apigw from "aws-cdk-lib/aws-apigateway";
-import { Construct } from "constructs";
+import { Construct, Node } from "constructs";
 import * as path from "path";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 
@@ -11,6 +11,7 @@ export class DownforceGrandPrixStack extends Stack {
   private table: dynamodb.Table;
   private tableNameOutput: CfnOutput;
   private createGameResultsLambda: lambda.Function;
+  private getSingleGameResultLambda: lambda.Function;
   private getGameResultsLambda: lambda.Function;
   private createSeasonLambda: lambda.Function;
   private getSeasonsLambda: lambda.Function;
@@ -86,11 +87,23 @@ export class DownforceGrandPrixStack extends Stack {
     );
 
     // Get game result lambda
-    this.getGameResultsLambda = new NodejsFunction(this, "GetGameResult", {
+    this.getSingleGameResultLambda = new NodejsFunction(this, "GetGameResult", {
       runtime: lambda.Runtime.NODEJS_16_X,
       entry: path.join(__dirname, "../services/getGameResult.ts"),
       handler: "handler",
       timeout: Duration.seconds(3),
+      memorySize: 128,
+      environment: {
+        TABLE_NAME: this.table.tableName,
+      },
+    });
+
+    // Get all games results lambda
+    this.getGameResultsLambda = new NodejsFunction(this, "GetGameResults", {
+      runtime: lambda.Runtime.NODEJS_16_X,
+      entry: path.join(__dirname, "../services/getGameResults.ts"),
+      handler: "handler",
+      timeout: Duration.seconds(10),
       memorySize: 128,
       environment: {
         TABLE_NAME: this.table.tableName,
@@ -128,6 +141,8 @@ export class DownforceGrandPrixStack extends Stack {
   private setLambdaPermissions = () => {
     this.table.grantReadWriteData(this.createGameResultsLambda);
 
+    this.table.grantReadData(this.getSingleGameResultLambda);
+
     this.table.grantReadData(this.getGameResultsLambda);
 
     this.table.grantWriteData(this.createSeasonLambda);
@@ -156,12 +171,18 @@ export class DownforceGrandPrixStack extends Stack {
       new apigw.LambdaIntegration(this.createGameResultsLambda)
     );
 
+    // All games
+    gameResultsResource.addMethod(
+      "GET",
+      new apigw.LambdaIntegration(this.getGameResultsLambda)
+    );
+
     // Single game
     const gameResultResource = gameResultsResource.addResource("{gameId}");
 
     gameResultResource.addMethod(
       "GET",
-      new apigw.LambdaIntegration(this.getGameResultsLambda)
+      new apigw.LambdaIntegration(this.getSingleGameResultLambda)
     );
   };
 

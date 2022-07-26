@@ -46,8 +46,6 @@ export const handler = async function (
         new SeasonPlayerImplementation(season, unknownPlayer.playerName, 1)
     );
 
-    console.log(newPlayerStubs);
-
     // Fetch the remaining (known) players
     const existingPlayersPromises: Promise<SeasonPlayer | null>[] = [];
     gameDTO.results
@@ -59,8 +57,6 @@ export const handler = async function (
       });
 
     const existingPlayers = await Promise.all(existingPlayersPromises);
-
-    console.log(existingPlayers);
 
     // Combine game results and player objects
     const gameResultsWithoutRatings: GameResultItem[] = gameDTO.results.map(
@@ -110,12 +106,8 @@ export const handler = async function (
       )!.eloAfterGame,
     }));
 
-    console.log(game, newPlayers);
-
     // Write game and new players to database. Update ELO ratings and game counts.
     const writtenId = await writeToDatabase(game, newPlayers);
-
-    console.log(writtenId);
 
     return {
       statusCode: 200,
