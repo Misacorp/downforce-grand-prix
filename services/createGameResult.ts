@@ -1,8 +1,11 @@
 import { APIGatewayEvent, APIGatewayProxyResult } from "aws-lambda";
 import { getNewRatings } from "multi-elo";
-import { Game, GameDTO, GameResultItem, SeasonPlayer } from "./types";
-import { createGamePrimaryKey, getDocumentClient } from "../data/utils";
-import { createPlayer } from "../data/createPlayer";
+import { Game, GameDTO, GameResultItem, Season, SeasonPlayer } from "./types";
+import {
+  createGamePrimaryKey,
+  createPlayerPrimaryKey,
+  getDocumentClient,
+} from "../data/utils";
 import { getPlayer } from "../data/getPlayer";
 import { getSeason } from "../data/getSeason";
 
@@ -34,13 +37,27 @@ export const handler = async function (
       (player) => player.playerId === null
     );
 
-    // Write unknown players to database
-    const createPlayersPromises: Promise<SeasonPlayer>[] = [];
-    unknownPlayers.forEach((player) => {
-      createPlayersPromises.push(createPlayer(player.playerName, season.pk1));
-    });
+    // Create stubs for the unknown players. These will be inserted into the database later.
+    const newPlayerStubs: SeasonPlayer[] = unknownPlayers.map(
+      (unknownPlayer): SeasonPlayer => {
+        const createdAt = new Date();
+        const createdPlayerPk = createPlayerPrimaryKey(createdAt);
 
-    const createdPlayers = await Promise.all(createPlayersPromises);
+        return {
+          pk1: createdPlayerPk,
+          sk1: season.pk1,
+          pk2: season.pk1,
+          sk2: createdPlayerPk,
+          type: "player",
+
+          name: unknownPlayer.playerName,
+          createdAt: createdAt.toISOString(),
+          season: season.pk1,
+          elo: season.config.startingElo,
+          gamesPlayed: 1,
+        };
+      }
+    );
 
     // Fetch the remaining (known) players
     const existingPlayersPromises: Promise<SeasonPlayer | null>[] = [];
@@ -61,7 +78,7 @@ export const handler = async function (
 
         if (p.playerId === null) {
           // Search by player name
-          player = createdPlayers.find(
+          player = newPlayerStubs.find(
             (player) => player.name === p.playerName
           );
         } else {
@@ -108,8 +125,16 @@ export const handler = async function (
       type: "game",
     };
 
-    // Write game to database and update player ELO ratings and game counts
-    const writtenId = await writeToDatabase(game);
+    // Add new ELO ratings to created player stubs
+    const newPlayers: SeasonPlayer[] = newPlayerStubs.map((playerStub) => ({
+      ...playerStub,
+      elo: game.results.find(
+        (gameResultItem) => gameResultItem.player.name === playerStub.name
+      )!.eloAfterGame,
+    }));
+
+    // Write game and new players to database. Update ELO ratings and game counts.
+    const writtenId = await writeToDatabase(game, newPlayers);
 
     return {
       statusCode: 200,
@@ -124,36 +149,53 @@ export const handler = async function (
 };
 
 /**
- * Writes a single game result item to the database
- * @param game Game result
+ * Writes a game and its players to the database. New players will be created. ELO ratings and game count for existing players will be updated.
+ * @param game       Game result
+ * @param newPlayers Players that need to be created in order for this game to be complete. Supply these players with their final game count and ELO rating.
  * @returns Primary key written to this item
  */
-export const writeToDatabase = async (game: Game): Promise<string> => {
+export const writeToDatabase = async (
+  game: Game,
+  newPlayers: SeasonPlayer[]
+): Promise<string> => {
+  const newPlayerIds = newPlayers.map((p) => p.pk1);
+
   await dbClient.transactWrite({
     TransactItems: [
-      // Update player ELO ratings
-      ...game.results.map((gameResultItem) => ({
-        Update: {
+      // Create new players
+      ...newPlayers.map((newPlayer) => ({
+        Put: {
           TableName: process.env.TABLE_NAME!,
-          Key: {
-            pk1: gameResultItem.player.id,
-            sk1: game.season.pk1,
-          },
-          UpdateExpression: "ADD gamesPlayed :inc SET elo = :elo",
-          ExpressionAttributeValues: {
-            ":inc": 1,
-            ":elo": gameResultItem.eloAfterGame,
-          },
+          Item: newPlayer,
         },
       })),
-      // Game item
+      // Update ELO ratings of existing players
+      ...game.results
+        // Filter out players that will be created and operate only on existing players
+        .filter(
+          (gameResultItem) => !newPlayerIds.includes(gameResultItem.player.id)
+        )
+        .map((gameResultItem) => ({
+          Update: {
+            TableName: process.env.TABLE_NAME!,
+            Key: {
+              pk1: gameResultItem.player.id,
+              sk1: game.season.pk1,
+            },
+            UpdateExpression: "ADD gamesPlayed :inc SET elo = :elo",
+            ExpressionAttributeValues: {
+              ":inc": 1,
+              ":elo": gameResultItem.eloAfterGame,
+            },
+          },
+        })),
+      // Create game item
       {
         Put: {
           TableName: process.env.TABLE_NAME!,
           Item: game,
         },
       },
-      // TODO: Investigate if it would be possible to create new players at this point
     ],
   });
 
