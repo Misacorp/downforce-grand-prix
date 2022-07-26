@@ -1,6 +1,9 @@
 import { DynamoDB } from "aws-sdk";
-import { createPlayerPrimaryKey, createPrimaryKey } from "./utils";
-import { Season, SeasonPlayer } from "../services/types";
+import {
+  Season,
+  SeasonPlayer,
+  SeasonPlayerImplementation,
+} from "../services/types";
 import { getSeason } from "./getSeason";
 import { dynamoDbConfig } from "../config";
 
@@ -30,23 +33,10 @@ export const createPlayer = async (
     throw new Error(`No season exists with seasonId ${seasonId}`);
   }
 
-  // Create new player
-  const createdAt = new Date();
-  const createdPlayerPk = createPlayerPrimaryKey(createdAt);
-
-  const seasonPlayer: SeasonPlayer = {
-    pk1: createdPlayerPk,
-    sk1: season.pk1,
-    pk2: season.pk1,
-    sk2: createdPlayerPk,
-    type: "player",
-
-    name: playerName,
-    createdAt: createdAt.toISOString(),
-    season: season.pk1,
-    elo: season.config.startingElo,
-    gamesPlayed: 0,
-  };
+  const seasonPlayer: SeasonPlayer = new SeasonPlayerImplementation(
+    season,
+    playerName
+  );
 
   // Write player to database
   await dbClient
