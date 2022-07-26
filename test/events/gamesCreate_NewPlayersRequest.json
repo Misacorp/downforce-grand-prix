@@ -40,6 +40,6 @@
     "domainName": "testPrefix.testDomainName",
     "apiId": "2orek2z2r7"
   },
-  "body": "{\"seasonId\": \"season#01822FDC4A2836D3692639AFE9C721B7\", \"results\": [{ \"playerId\": null, \"playerName\": \"Jackie\", \"placement\": 1 }, { \"playerId\": null, \"playerName\": \"My Man\", \"placement\": 2 }]}",
+  "body": "{\"seasonId\": \"season#01823A0114DF51CEA21E494F6640A288\", \"results\": [{ \"playerId\": null, \"playerName\": \"Jackie\", \"placement\": 1 }, { \"playerId\": null, \"playerName\": \"My Man\", \"placement\": 2 }]}",
   "isBase64Encoded": false
 }

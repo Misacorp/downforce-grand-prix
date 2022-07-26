@@ -8,7 +8,7 @@ import {
   SeasonPlayer,
   SeasonPlayerImplementation,
 } from "./types";
-import { createGamePrimaryKey, getDocumentClient } from "../data/utils";
+import { getDocumentClient } from "../data/utils";
 import { getPlayer } from "../data/getPlayer";
 import { getSeason } from "../data/getSeason";
 
@@ -46,6 +46,8 @@ export const handler = async function (
         new SeasonPlayerImplementation(season, unknownPlayer.playerName, 1)
     );
 
+    console.log(newPlayerStubs);
+
     // Fetch the remaining (known) players
     const existingPlayersPromises: Promise<SeasonPlayer | null>[] = [];
     gameDTO.results
@@ -57,6 +59,8 @@ export const handler = async function (
       });
 
     const existingPlayers = await Promise.all(existingPlayersPromises);
+
+    console.log(existingPlayers);
 
     // Combine game results and player objects
     const gameResultsWithoutRatings: GameResultItem[] = gameDTO.results.map(
@@ -106,8 +110,12 @@ export const handler = async function (
       )!.eloAfterGame,
     }));
 
+    console.log(game, newPlayers);
+
     // Write game and new players to database. Update ELO ratings and game counts.
     const writtenId = await writeToDatabase(game, newPlayers);
+
+    console.log(writtenId);
 
     return {
       statusCode: 200,
@@ -216,8 +224,8 @@ export const updateELORatings = (
 
   // Create an array to describe the order in which players placed.
   // This is used when calling the ELO calculating function and accounts for ties.
-  // The first player (most points) should have the smallest "order index".
-  // The last player (least points) should have the highest "order index".
+  // The first player should have the smallest "order index".
+  // The last player should have the highest "order index".
   // Tied players should have the same "order index"
   const order = sortedAsc.map((gameResultItem) => gameResultItem.placement);
 

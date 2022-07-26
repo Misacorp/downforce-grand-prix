@@ -47,5 +47,10 @@ export const getDocumentClient = () => {
     client = new DynamoDB({});
   }
 
-  return DynamoDBDocument.from(client);
+  return DynamoDBDocument.from(client, {
+    marshallOptions: {
+      convertClassInstanceToMap: true,
+      removeUndefinedValues: true,
+    },
+  });
 };
