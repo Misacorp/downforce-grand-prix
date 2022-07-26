@@ -33,12 +33,12 @@ describe("createGameResults", () => {
           {
             playerId: null,
             playerName: "Doug Judy",
-            points: 13,
+            placement: 2,
           },
           {
             playerId: null,
             playerName: "Trudy Judy",
-            points: 21,
+            placement: 1,
           },
         ],
       };
@@ -62,17 +62,17 @@ describe("createGameResults", () => {
           {
             playerId: null,
             playerName: "Doug Judy",
-            points: 13,
+            placement: 2,
           },
           {
             playerId: null,
             playerName: "Trudy Judy",
-            points: 21,
+            placement: 1,
           },
           {
             playerId: null,
             playerName: "Abed Nadir",
-            points: 4,
+            placement: 3,
           },
         ],
       };
@@ -113,12 +113,12 @@ describe("createGameResults", () => {
           {
             playerId: "player#001",
             playerName: "Doug Judy",
-            points: 13,
+            placement: 2,
           },
           {
             playerId: null,
             playerName: "Trudy Judy",
-            points: 21,
+            placement: 1,
           },
         ],
       };
@@ -153,71 +153,154 @@ describe("createGameResults", () => {
   });
 
   describe("updateELORatings", () => {
-    const winner: GameResultItem = {
+    const p1: GameResultItem = {
       player: {
-        id: "winner",
-        name: "Winner",
+        id: "p1",
+        name: "Player 1",
       },
-      points: 22,
-      eloBeforeGame: 1200,
-      eloAfterGame: 0,
-    };
-    const loser: GameResultItem = {
-      player: {
-        id: "loser",
-        name: "Loser",
-      },
-      points: 1,
+      placement: 1,
       eloBeforeGame: 1200,
       eloAfterGame: 0,
     };
 
-    it("should calculate ELO ratings when the first player beats the second player", () => {
-      const gameResultItems: GameResultItem[] = [winner, loser];
+    const p2: GameResultItem = {
+      player: {
+        id: "p2",
+        name: "Player 2",
+      },
+      placement: 2,
+      eloBeforeGame: 1200,
+      eloAfterGame: 0,
+    };
 
-      const act = updateELORatings(gameResultItems);
+    const p3: GameResultItem = {
+      player: {
+        id: "p3",
+        name: "Player 3",
+      },
+      placement: 3,
+      eloBeforeGame: 1200,
+      eloAfterGame: 0,
+    };
 
-      const winnerElo = act.find(
-        (gameResultItem) => gameResultItem.player.id === "winner"
-      )!.eloAfterGame;
-      const loserElo = act.find(
-        (gameResultItem) => gameResultItem.player.id === "loser"
-      )!.eloAfterGame;
+    const p4: GameResultItem = {
+      player: {
+        id: "p4",
+        name: "Player 4",
+      },
+      placement: 4,
+      eloBeforeGame: 1200,
+      eloAfterGame: 0,
+    };
 
-      expect(winnerElo).toBeGreaterThan(loserElo);
+    describe("two players", () => {
+      it("should calculate ELO ratings when the first player beats the second player", () => {
+        const gameResultItems: GameResultItem[] = [p1, p2];
+
+        const act = updateELORatings(gameResultItems);
+
+        const winnerElo = act.find(
+          (gameResultItem) => gameResultItem.player.id === p1.player.id
+        )!.eloAfterGame;
+        const loserElo = act.find(
+          (gameResultItem) => gameResultItem.player.id === p2.player.id
+        )!.eloAfterGame;
+
+        expect(winnerElo).toBeGreaterThan(loserElo);
+      });
+
+      it("should calculate ELO ratings when the second player beats the first player", () => {
+        const gameResultItems: GameResultItem[] = [p2, p1];
+
+        const act = updateELORatings(gameResultItems);
+
+        const winnerElo = act.find(
+          (gameResultItem) => gameResultItem.player.id === p1.player.id
+        )!.eloAfterGame;
+        const loserElo = act.find(
+          (gameResultItem) => gameResultItem.player.id === p2.player.id
+        )!.eloAfterGame;
+
+        expect(winnerElo).toBeGreaterThan(loserElo);
+      });
+
+      it("should calculate ELO ratings when two players tie", () => {
+        const gameResultItems: GameResultItem[] = [
+          { ...p1, player: { id: "first-player", name: "First Player" } },
+          { ...p1, player: { id: "second-player", name: "Second Player" } },
+        ];
+
+        const act = updateELORatings(gameResultItems);
+
+        const firstElo = act.find(
+          (gameResultItem) => gameResultItem.player.id === "first-player"
+        )!.eloAfterGame;
+        const secondElo = act.find(
+          (gameResultItem) => gameResultItem.player.id === "second-player"
+        )!.eloAfterGame;
+
+        expect(firstElo).toEqual(secondElo);
+      });
     });
 
-    it("should calculate ELO ratings when the second player beats the first player", () => {
-      const gameResultItems: GameResultItem[] = [loser, winner];
+    describe("multiple players", () => {
+      it("should calculate ELO ratings", () => {
+        const gameResultItems: GameResultItem[] = [p2, p3, p1, p4];
 
-      const act = updateELORatings(gameResultItems);
+        const act = updateELORatings(gameResultItems);
 
-      const winnerElo = act.find(
-        (gameResultItem) => gameResultItem.player.id === "winner"
-      )!.eloAfterGame;
-      const loserElo = act.find(
-        (gameResultItem) => gameResultItem.player.id === "loser"
-      )!.eloAfterGame;
+        const p1Elo = act.find(
+          (gameResultItem) => gameResultItem.player.id === p1.player.id
+        )!.eloAfterGame;
+        const p2Elo = act.find(
+          (gameResultItem) => gameResultItem.player.id === p2.player.id
+        )!.eloAfterGame;
+        const p3Elo = act.find(
+          (gameResultItem) => gameResultItem.player.id === p3.player.id
+        )!.eloAfterGame;
+        const p4Elo = act.find(
+          (gameResultItem) => gameResultItem.player.id === p4.player.id
+        )!.eloAfterGame;
 
-      expect(winnerElo).toBeGreaterThan(loserElo);
-    });
+        expect(p1Elo).toBeGreaterThan(p2Elo);
+        expect(p1Elo).toBeGreaterThan(p3Elo);
+        expect(p1Elo).toBeGreaterThan(p4Elo);
+        expect(p2Elo).toBeGreaterThan(p3Elo);
+        expect(p2Elo).toBeGreaterThan(p4Elo);
+        expect(p3Elo).toBeGreaterThan(p4Elo);
+      });
 
-    it("should calculate ELO ratings when two players tie", () => {
-      const gameResultItems: GameResultItem[] = [
-        { ...winner, player: { id: "first-player", name: "First Player" } },
-        { ...winner, player: { id: "second-player", name: "Second Player" } },
-      ];
+      it("should calculate ELO ratings when two players tie in a multiplayer game", () => {
+        // Player 3 ties with player 2
+        const gameResultItems: GameResultItem[] = [
+          p2,
+          { ...p3, placement: p2.placement },
+          p1,
+          p4,
+        ];
 
-      const act = updateELORatings(gameResultItems);
+        const act = updateELORatings(gameResultItems);
 
-      const firstElo = act.find(
-        (gameResultItem) => gameResultItem.player.id === "first-player"
-      )!.eloAfterGame;
-      const secondElo = act.find(
-        (gameResultItem) => gameResultItem.player.id === "second-player"
-      )!.eloAfterGame;
+        const p1Elo = act.find(
+          (gameResultItem) => gameResultItem.player.id === p1.player.id
+        )!.eloAfterGame;
+        const p2Elo = act.find(
+          (gameResultItem) => gameResultItem.player.id === p2.player.id
+        )!.eloAfterGame;
+        const p3Elo = act.find(
+          (gameResultItem) => gameResultItem.player.id === p3.player.id
+        )!.eloAfterGame;
+        const p4Elo = act.find(
+          (gameResultItem) => gameResultItem.player.id === p4.player.id
+        )!.eloAfterGame;
 
-      expect(firstElo).toEqual(secondElo);
+        expect(p1Elo).toBeGreaterThan(p2Elo);
+        expect(p1Elo).toBeGreaterThan(p3Elo);
+        expect(p1Elo).toBeGreaterThan(p4Elo);
+        expect(p2Elo).toEqual(p3Elo);
+        expect(p2Elo).toBeGreaterThan(p4Elo);
+        expect(p3Elo).toBeGreaterThan(p4Elo);
+      });
     });
   });
 });

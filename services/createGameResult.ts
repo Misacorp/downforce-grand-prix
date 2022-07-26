@@ -81,7 +81,7 @@ export const handler = async function (
             id: player.pk1,
             name: player.name,
           },
-          points: p.points,
+          placement: p.placement,
           eloBeforeGame: player.elo,
           eloAfterGame: 0, // Calculate this later in the code
         };
@@ -131,6 +131,7 @@ export const handler = async function (
 export const writeToDatabase = async (game: Game): Promise<string> => {
   await dbClient.transactWrite({
     TransactItems: [
+      // Update player ELO ratings
       ...game.results.map((gameResultItem) => ({
         Update: {
           TableName: process.env.TABLE_NAME!,
@@ -145,12 +146,14 @@ export const writeToDatabase = async (game: Game): Promise<string> => {
           },
         },
       })),
+      // Game item
       {
         Put: {
           TableName: process.env.TABLE_NAME!,
           Item: game,
         },
       },
+      // TODO: Investigate if it would be possible to create new players at this point
     ],
   });
 
@@ -191,32 +194,25 @@ const reject = (
 export const updateELORatings = (
   results: GameResultItem[]
 ): GameResultItem[] => {
-  // Sort by descending order of points. The first player is first and last player is last.
-  const sortedDesc = results.sort((a, b) => b.points - a.points);
+  // Sort by ascending placement order
+  const sortedAsc = results.sort((a, b) => a.placement - b.placement);
 
-  const playerRatings = sortedDesc.map((player) => player.eloBeforeGame);
-
-  const highestPointCount: number = Math.max(
-    ...sortedDesc.map((item) => item.points)
-  );
+  const playerRatings = sortedAsc.map((player) => player.eloBeforeGame);
 
   // Create an array to describe the order in which players placed.
   // This is used when calling the ELO calculating function and accounts for ties.
   // The first player (most points) should have the smallest "order index".
   // The last player (least points) should have the highest "order index".
   // Tied players should have the same "order index"
-  // We add the highest point count to each result since negative values don't work with the elo calculator we use
-  const order = sortedDesc.map(
-    (gameResultItem) => gameResultItem.points * -1 + highestPointCount
-  );
+  const order = sortedAsc.map((gameResultItem) => gameResultItem.placement);
 
   // Calculate new ELO ratings
   const newRatings = getNewRatings(playerRatings, order);
 
   // Assign new ELO ratings to sorted results and return them
-  sortedDesc.forEach(
+  sortedAsc.forEach(
     (player, index) => (player.eloAfterGame = newRatings[index])
   );
 
-  return sortedDesc;
+  return sortedAsc;
 };

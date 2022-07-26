@@ -48,7 +48,7 @@ export interface GameResultItemPlayer {
  */
 export interface GameResultItem {
   player: GameResultItemPlayer;
-  points: number;
+  placement: number;
   eloBeforeGame: number;
   eloAfterGame: number;
 }
@@ -74,6 +74,6 @@ export interface GameDTO {
   results: {
     playerId: string | null;
     playerName: string;
-    points: number;
+    placement: number;
   }[];
 }

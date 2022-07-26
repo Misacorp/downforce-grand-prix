@@ -40,6 +40,6 @@
     "domainName": "testPrefix.testDomainName",
     "apiId": "2orek2z2r7"
   },
-  "body": "{\"seasonId\": \"season#01822FDC4A2836D3692639AFE9C721B7\", \"results\": [{ \"playerId\": \"player#01823039AB9F7DF4531422C421F9E51F\", \"playerName\": \"Jackie\", \"points\": 2 }, { \"playerId\": \"player#01823039AC55E188F93501D7C826E365\", \"playerName\": \"My Man\", \"points\": 13 }]}",
+  "body": "{\"seasonId\": \"season#01822FDC4A2836D3692639AFE9C721B7\", \"results\": [{ \"playerId\": \"player#01823039AB9F7DF4531422C421F9E51F\", \"playerName\": \"Jackie\", \"placement\": 2 }, { \"playerId\": \"player#01823039AC55E188F93501D7C826E365\", \"playerName\": \"My Man\", \"placement\": 1 }]}",
   "isBase64Encoded": false
 }
