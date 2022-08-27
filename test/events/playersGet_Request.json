@@ -1,5 +1,5 @@
 {
-  "resource": "/game",
+  "resource": "/player",
   "path": "/0182108C6A15E099942AD08A13F3221C",
   "httpMethod": "GET",
   "headers": null,
@@ -8,15 +8,15 @@
     "seasonId": "0182BC8BF8924B8391570169A5C07F0D"
   },
   "multiValueQueryStringParameters": null,
-  "pathParameters": { "gameId": "0182108C6A15E099942AD08A13F3221C" },
+  "pathParameters": null,
   "stageVariables": null,
   "requestContext": {
     "resourceId": "test",
-    "resourcePath": "/game",
+    "resourcePath": "/player",
     "httpMethod": "GET",
     "extendedRequestId": "something",
     "requestTime": "23/Jul/2022:13:33:37 +0000",
-    "path": "/game",
+    "path": "/player",
     "accountId": "183747294084",
     "protocol": "HTTP/1.1",
     "stage": "prod",

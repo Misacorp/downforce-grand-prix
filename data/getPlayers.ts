@@ -16,17 +16,18 @@ export const getPlayers = async (
   const dbResult = await dbClient.query({
     TableName,
     IndexName: "gsi2",
-    KeyConditionExpression: `#pk2 = :season and begins_with(#sk2, ${ENTITY_PREFIXES.PLAYER})`,
+    KeyConditionExpression: `#pk2 = :season and begins_with(#sk2, :playerPrefix)`,
     ExpressionAttributeValues: {
-      ":season": seasonId,
+      ":season": `${ENTITY_PREFIXES.SEASON}${seasonId}`,
+      ":playerPrefix": ENTITY_PREFIXES.PLAYER,
     },
     ExpressionAttributeNames: {
       "#pk2": "pk2",
       "#sk2": "sk2",
       "#type": "type",
+      "#name": "name",
     },
-    ProjectionExpression:
-      "pk1, createdAt, #type, playerName, playerElo, gameCount",
+    ProjectionExpression: "pk1, createdAt, #type, #name, elo, gamesPlayed",
   });
 
   const players = dbResult.Items;

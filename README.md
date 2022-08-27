@@ -17,14 +17,14 @@ The results of each game of Downforce would be entered into the application and 
 The following API endpoints are planned. See their implementation status in the table below.
 
 | Function                             | Method and Path                | Implemented |
-| :----------------------------------- | :----------------------------- | :---------: |
-| Get list of all seasons              | `GET /season`                  |     ✅      |
-| Create season                        | `POST /season`                 |     ✅      |
-| Get list of all players in a season  | `GET /player?season=:seasonId` |     ❌      |
-| Get player info and all played games | `GET /player/:playerId`        |     ❌      |
-| Create game                          | `POST /game`                   |     ✅      |
-| Get single game                      | `GET /game/:gameId`            |     ✅      |
-| Get list of all games in a season    | `GET /game?season=:seasonId`   |     ✅      |
+| :----------------------------------- | :----------------------------- |:-----------:|
+| Get list of all seasons              | `GET /season`                  |      ✅      |
+| Create season                        | `POST /season`                 |      ✅      |
+| Get list of all players in a season  | `GET /player?season=:seasonId` |      ✅       |
+| Get player info and all played games | `GET /player/:playerId`        |      ❌      |
+| Create game                          | `POST /game`                   |      ✅      |
+| Get single game                      | `GET /game/:gameId`            |      ✅      |
+| Get list of all games in a season    | `GET /game?season=:seasonId`   |      ✅      |
 
 Note that any given `Player` is always tied to a single season. The same person playing in two different seasons will be represented by two different `Player` entities, one for each season.
 

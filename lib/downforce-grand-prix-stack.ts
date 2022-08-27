@@ -15,6 +15,7 @@ export class DownforceGrandPrixStack extends Stack {
   private getGameResultsLambda: lambda.Function;
   private createSeasonLambda: lambda.Function;
   private getSeasonsLambda: lambda.Function;
+  private getPlayersLambda: lambda.Function;
   private api: apigw.RestApi;
 
   constructor(scope: Construct, id: string, props?: StackProps) {
@@ -133,6 +134,18 @@ export class DownforceGrandPrixStack extends Stack {
         TABLE_NAME: this.table.tableName,
       },
     });
+
+    // Get all players in a season lambda
+    this.getPlayersLambda = new NodejsFunction(this, "GetPlayers", {
+      runtime: lambda.Runtime.NODEJS_16_X,
+      entry: path.join(__dirname, "../services/getPlayers.ts"),
+      handler: "handler",
+      timeout: Duration.seconds(3),
+      memorySize: 128,
+      environment: {
+        TABLE_NAME: this.table.tableName,
+      },
+    });
   };
 
   /**
@@ -158,6 +171,7 @@ export class DownforceGrandPrixStack extends Stack {
 
     this.addGameRoutes();
     this.addSeasonRoutes();
+    this.addPlayerRoutes();
   };
 
   /**
@@ -201,6 +215,18 @@ export class DownforceGrandPrixStack extends Stack {
     seasonsResource.addMethod(
       "GET",
       new apigw.LambdaIntegration(this.getSeasonsLambda)
+    );
+  };
+
+  /**
+   * Adds player routes to the API
+   */
+  private addPlayerRoutes = () => {
+    const playersResource = this.api.root.addResource("player");
+
+    playersResource.addMethod(
+      "GET",
+      new apigw.LambdaIntegration(this.getPlayersLambda)
     );
   };
 
