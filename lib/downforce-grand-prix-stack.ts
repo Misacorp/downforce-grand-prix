@@ -161,6 +161,8 @@ export class DownforceGrandPrixStack extends Stack {
     this.table.grantWriteData(this.createSeasonLambda);
 
     this.table.grantReadData(this.getSeasonsLambda);
+
+    this.table.grantReadData(this.getPlayersLambda);
   };
 
   /**
