@@ -29,11 +29,11 @@ export const getSeasons = async (
 
   const seasons = dbResult.Items;
 
-  // No game found
+  // No seasons found
   if (!seasons?.length) {
     console.warn(`Tried to get a list of seasons but no seasons were found.`);
 
-    return null;
+    return [];
   }
 
   return <Season[]>seasons;

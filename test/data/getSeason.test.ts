@@ -23,7 +23,7 @@ describe("getSeason", () => {
     });
 
     // Act
-    const season = await getSeason("season#01", "TEST_TABLE_NAME");
+    await getSeason("season#01", "TEST_TABLE_NAME");
 
     expect(ddbMock).toHaveReceivedCommandTimes(GetCommand, 1);
     expect(ddbMock).toHaveReceivedCommandWith(GetCommand, {
