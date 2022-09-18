@@ -1,11 +1,13 @@
-import {Duration, Stack, StackProps, CfnOutput} from "aws-cdk-lib";
+import { CfnOutput, Duration, Stack, StackProps } from "aws-cdk-lib";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
-import {AttributeType, BillingMode} from "aws-cdk-lib/aws-dynamodb";
+import { AttributeType, BillingMode } from "aws-cdk-lib/aws-dynamodb";
 import * as apigw from "aws-cdk-lib/aws-apigateway";
-import {Construct, Node} from "constructs";
+import { ApiKey, Period } from "aws-cdk-lib/aws-apigateway";
+import { Construct } from "constructs";
 import * as path from "path";
-import {NodejsFunction} from "aws-cdk-lib/aws-lambda-nodejs";
+import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
+import { DEV_API_KEY } from "../secretVariables";
 
 export class DownforceGrandPrixStack extends Stack {
   private table: dynamodb.Table;
@@ -49,21 +51,21 @@ export class DownforceGrandPrixStack extends Stack {
    */
   private initTable = () => {
     this.table = new dynamodb.Table(this, "Table", {
-      partitionKey: {name: "pk1", type: AttributeType.STRING},
-      sortKey: {name: "sk1", type: AttributeType.STRING},
+      partitionKey: { name: "pk1", type: AttributeType.STRING },
+      sortKey: { name: "sk1", type: AttributeType.STRING },
       billingMode: BillingMode.PAY_PER_REQUEST,
     });
 
     // Add global secondary indexes
     this.table.addGlobalSecondaryIndex({
       indexName: "gsi2",
-      partitionKey: {name: "pk2", type: AttributeType.STRING},
-      sortKey: {name: "sk2", type: AttributeType.STRING},
+      partitionKey: { name: "pk2", type: AttributeType.STRING },
+      sortKey: { name: "sk2", type: AttributeType.STRING },
     });
 
     this.table.addGlobalSecondaryIndex({
       indexName: "gsi3",
-      partitionKey: {name: "pk3", type: AttributeType.STRING},
+      partitionKey: { name: "pk3", type: AttributeType.STRING },
     });
   };
 
@@ -172,13 +174,64 @@ export class DownforceGrandPrixStack extends Stack {
     this.api = new apigw.RestApi(this, "downforce-api", {
       defaultCorsPreflightOptions: {
         allowOrigins: apigw.Cors.ALL_ORIGINS,
-        allowMethods: apigw.Cors.ALL_METHODS
-      }
+        allowMethods: apigw.Cors.ALL_METHODS,
+      },
     });
+
+    this.addProdUsagePlan();
+    // Dev plan is still a work in progress as I'm figuring out how to properly set it up.
+    // this.addDevUsagePlan();
 
     this.addGameRoutes();
     this.addSeasonRoutes();
     this.addPlayerRoutes();
+  };
+
+  /**
+   * Adds a development plan to the API.
+   * This plan has a high quota and rate limit.
+   */
+  private addDevUsagePlan = () => {
+    // Development usage plan. Has a high limit.
+    const devPlan = this.api.addUsagePlan("dev-usage-plan", {
+      name: "dev-usage-plan",
+      description: "Usage plan for development environments",
+      quota: {
+        limit: 2000,
+        period: Period.DAY,
+      },
+      throttle: {
+        rateLimit: 5,
+        burstLimit: 20,
+      },
+    });
+
+    // Create and add dev API key
+    const devApiKey = this.api.addApiKey("dev-api-key", {
+      apiKeyName: "dev-api-key",
+      value: DEV_API_KEY,
+    });
+
+    devPlan.addApiKey(devApiKey);
+  };
+
+  /**
+   * Production usage plan.
+   * Has a low quota and rate limit.
+   */
+  private addProdUsagePlan = () => {
+    this.api.addUsagePlan("prod-usage-plan", {
+      name: "prod-usage-plan",
+      description: "Usage plan for production",
+      quota: {
+        limit: 500,
+        period: Period.DAY,
+      },
+      throttle: {
+        rateLimit: 2,
+        burstLimit: 4,
+      },
+    });
   };
 
   /**
