@@ -1,6 +1,7 @@
 import { APIGatewayEvent, APIGatewayProxyResult } from "aws-lambda";
 import { getGame } from "../data/getGame";
 import { ENTITY_PREFIXES } from "../data/utils";
+import { headers } from "./apiUtils";
 
 // npx cdk synth --no-staging DownforceGrandPrixStack > template.yaml
 // aws-vault exec sandbox -- sam local invoke --event ./test/events/gamesGet_PathParameterRequest.json --env-vars environment.json GetGameResult
@@ -30,9 +31,7 @@ export const handler = async (event: APIGatewayEvent) => {
     // Game found
     return {
       statusCode: 200,
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers,
       body: JSON.stringify(game),
     };
   } catch (err) {
@@ -57,9 +56,7 @@ const reject = (
 
   return {
     statusCode,
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers,
     body: JSON.stringify({
       title: "An error occurred when fetching a single game",
       description: message,

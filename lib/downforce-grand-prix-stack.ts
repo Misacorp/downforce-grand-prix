@@ -1,11 +1,11 @@
-import { Duration, Stack, StackProps, CfnOutput } from "aws-cdk-lib";
+import {Duration, Stack, StackProps, CfnOutput} from "aws-cdk-lib";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
-import { AttributeType, BillingMode } from "aws-cdk-lib/aws-dynamodb";
+import {AttributeType, BillingMode} from "aws-cdk-lib/aws-dynamodb";
 import * as apigw from "aws-cdk-lib/aws-apigateway";
-import { Construct, Node } from "constructs";
+import {Construct, Node} from "constructs";
 import * as path from "path";
-import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
+import {NodejsFunction} from "aws-cdk-lib/aws-lambda-nodejs";
 
 export class DownforceGrandPrixStack extends Stack {
   private table: dynamodb.Table;
@@ -49,21 +49,21 @@ export class DownforceGrandPrixStack extends Stack {
    */
   private initTable = () => {
     this.table = new dynamodb.Table(this, "Table", {
-      partitionKey: { name: "pk1", type: AttributeType.STRING },
-      sortKey: { name: "sk1", type: AttributeType.STRING },
+      partitionKey: {name: "pk1", type: AttributeType.STRING},
+      sortKey: {name: "sk1", type: AttributeType.STRING},
       billingMode: BillingMode.PAY_PER_REQUEST,
     });
 
     // Add global secondary indexes
     this.table.addGlobalSecondaryIndex({
       indexName: "gsi2",
-      partitionKey: { name: "pk2", type: AttributeType.STRING },
-      sortKey: { name: "sk2", type: AttributeType.STRING },
+      partitionKey: {name: "pk2", type: AttributeType.STRING},
+      sortKey: {name: "sk2", type: AttributeType.STRING},
     });
 
     this.table.addGlobalSecondaryIndex({
       indexName: "gsi3",
-      partitionKey: { name: "pk3", type: AttributeType.STRING },
+      partitionKey: {name: "pk3", type: AttributeType.STRING},
     });
   };
 
@@ -169,7 +169,12 @@ export class DownforceGrandPrixStack extends Stack {
    * Define an API
    */
   private initApi = () => {
-    this.api = new apigw.RestApi(this, "downforce-api");
+    this.api = new apigw.RestApi(this, "downforce-api", {
+      defaultCorsPreflightOptions: {
+        allowOrigins: apigw.Cors.ALL_ORIGINS,
+        allowMethods: apigw.Cors.ALL_METHODS
+      }
+    });
 
     this.addGameRoutes();
     this.addSeasonRoutes();

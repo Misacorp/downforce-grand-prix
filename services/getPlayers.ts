@@ -1,5 +1,6 @@
 import { APIGatewayEvent, APIGatewayProxyResult } from "aws-lambda";
 import { getPlayers } from "../data/getPlayers";
+import { headers } from "./apiUtils";
 
 // npx cdk synth --no-staging DownforceGrandPrixStack > template.yaml
 // aws-vault exec sandbox -- sam local invoke --event ./test/events/playersGet_Request.json --env-vars environment.json GetPlayers
@@ -23,9 +24,7 @@ export const handler = async (event: APIGatewayEvent) => {
     // Players found
     return {
       statusCode: 200,
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers,
       body: JSON.stringify(players),
     };
   } catch (err) {
@@ -50,9 +49,7 @@ const reject = (
 
   return {
     statusCode,
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers,
     body: JSON.stringify({
       title:
         "An error occurred when fetching a list of players in a given season",

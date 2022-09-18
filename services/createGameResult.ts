@@ -11,6 +11,7 @@ import {
 import { getDocumentClient } from "../data/utils";
 import { getPlayer } from "../data/getPlayer";
 import { getSeason } from "../data/getSeason";
+import { headers } from "./apiUtils";
 
 const dbClient = getDocumentClient();
 
@@ -192,9 +193,7 @@ const reject = (
 
   return {
     statusCode,
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers,
     body: JSON.stringify({
       title: "An error occurred",
       description: message,

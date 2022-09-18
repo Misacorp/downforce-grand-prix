@@ -1,6 +1,7 @@
 import { APIGatewayEvent, APIGatewayProxyResult } from "aws-lambda";
 import { createSeason } from "../data/createSeason";
 import { SeasonConfig } from "./types";
+import { headers } from "./apiUtils";
 
 /**
  * Creates a season and saves it to DynamoDB
@@ -22,9 +23,7 @@ export const handler = async function (
 
     return {
       statusCode: 200,
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers,
       body: JSON.stringify({ id: writtenId }),
     };
   } catch (err) {
@@ -37,9 +36,7 @@ const reject = (
   message: string
 ): APIGatewayProxyResult => ({
   statusCode,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  headers,
   body: JSON.stringify({
     title: "An error occurred",
     description: message,
