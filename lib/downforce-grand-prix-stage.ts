@@ -10,7 +10,7 @@ export class DownforceGrandPrixStage extends Stage {
     super(scope, id, props);
 
     new DownforceGrandPrixStack(this, "DownforceGrandPrix", {
-      stackName: "DownforceGrandPrixStack",
+      stackName: `${id}-DownforceGrandPrixStack`,
       description: "Track player progress in board games.",
     });
   }
