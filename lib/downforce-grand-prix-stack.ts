@@ -175,6 +175,12 @@ export class DownforceGrandPrixStack extends Stack {
         allowOrigins: apigw.Cors.ALL_ORIGINS,
         allowMethods: apigw.Cors.ALL_METHODS,
       },
+      deployOptions: {
+        description: "Default Downforce Grand Prix API",
+        stageName: "api", // This is 'prod' by default, but we don't have API stages so this makes more sense
+        throttlingRateLimit: 2, // The throttling values here are pure guesses on what could be good
+        throttlingBurstLimit: 4,
+      },
     });
 
     this.addProdUsagePlan();

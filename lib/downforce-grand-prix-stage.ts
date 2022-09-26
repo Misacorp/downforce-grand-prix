@@ -9,6 +9,9 @@ export class DownforceGrandPrixStage extends Stage {
   constructor(scope: Construct, id: string, props?: StageProps) {
     super(scope, id, props);
 
-    new DownforceGrandPrixStack(this, "WebService");
+    new DownforceGrandPrixStack(this, "DownforceGrandPrix", {
+      stackName: "DownforceGrandPrixStack",
+      description: "Track player progress in board games.",
+    });
   }
 }
